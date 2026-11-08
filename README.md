@@ -3,7 +3,7 @@
 Free tools for small businesses, creators and everyday life. Every tool runs in your browser, so your files and
 data stay on your device. You don't need an account.
 
-**Live:** https://pawansinha0612.github.io/brahaspati/
+**Live:** https://tools.pawansinha.com.au/
 
 ## Tools
 
