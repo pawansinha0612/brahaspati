@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>File Converter — Brahaspati</title>
+<meta name="description" content="Convert between CSV, Excel, JSON, Markdown tables, HTML tables, TSV and SQL INSERT statements, and pull text out of PDF and Word files. Free and private — runs in your browser.">
+<link rel="stylesheet" href="../../assets/style.css">
+<style>
+  .fc-opts { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; }
+  .fc-opts label.inline { display: inline-flex; gap: 6px; align-items: center; font-weight: 400; margin: 0; }
+  .fc-opts label.inline input[type=checkbox] { width: auto; }
+  .fc-field { min-width: 160px; flex: 1; max-width: 300px; }
+  .fc-field label { margin-top: 0; }
+  #fc-out { min-height: 220px; }
+  .fc-docprev { border: 1px solid var(--line); border-radius: 8px; padding: 12px; max-height: 420px; overflow: auto; overflow-wrap: anywhere; background: var(--panel); }
+  .fc-name { font-weight: 600; overflow-wrap: anywhere; }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <p class="eyebrow">Utilities · Convert</p>
+    <h1>File Converter</h1>
+    <p class="lead">Turn a spreadsheet into JSON, a JSON export into Excel, a table into Markdown or SQL, and pull the text out of PDF and Word files. Nothing is uploaded.</p>
+  </section>
+
+  <div class="panel">
+    <h2 style="margin-top:0">1. Your file or text</h2>
+    <div class="drop" id="fc-drop"><strong>Drop a file here</strong> or click to choose<br><span class="small">CSV, TSV, Excel, JSON, Markdown, HTML, PDF, Word (.docx)</span></div>
+    <p class="small" id="fc-src" aria-live="polite"></p>
+    <label for="fc-in">…or paste text</label>
+    <textarea id="fc-in" placeholder="Paste CSV, JSON, a Markdown table or HTML table here"></textarea>
+    <div class="fc-opts" style="margin-top:8px">
+      <div class="fc-field"><label for="fc-from">Read it as</label>
+        <select id="fc-from"><option value="auto">Work it out for me</option><option value="csv">CSV</option><option value="tsv">TSV (tab separated)</option><option value="json">JSON</option><option value="markdown">Markdown table</option><option value="html">HTML table</option></select></div>
+      <div class="fc-field" id="fc-sheet-wrap" hidden><label for="fc-sheet">Sheet</label><select id="fc-sheet"></select></div>
+      <div class="fc-field" id="fc-tbl-wrap" hidden><label for="fc-tbl">Table</label><select id="fc-tbl"></select></div>
+      <label class="inline"><input type="checkbox" id="fc-flatten" checked> Flatten nested JSON (dot paths)</label>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <button class="btn" type="button" id="fc-s-csv">Try sample CSV</button>
+      <button class="btn" type="button" id="fc-s-json">Try sample nested JSON</button>
+      <button class="btn" type="button" id="fc-clear">Clear</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2 style="margin-top:0">2. Convert to</h2>
+    <div class="fc-opts">
+      <div class="fc-field"><label for="fc-to">Output</label><select id="fc-to"></select></div>
+      <div class="fc-field" data-for="sql"><label for="fc-table">SQL table name</label><input type="text" id="fc-table" value="my_table"></div>
+      <label class="inline" data-for="sql"><input type="checkbox" id="fc-create"> Add CREATE TABLE</label>
+      <label class="inline" data-for="sql"><input type="checkbox" id="fc-null" checked> Empty cells as NULL</label>
+      <label class="inline" data-for="sql"><input type="checkbox" id="fc-batch"> One INSERT per 100 rows</label>
+      <label class="inline" data-for="json"><input type="checkbox" id="fc-types" checked> Turn “12” into numbers and “true” into true</label>
+    </div>
+    <p class="small muted" id="fc-info" aria-live="polite"></p>
+    <div id="fc-preview"></div>
+    <label for="fc-out">Result</label>
+    <textarea id="fc-out" readonly></textarea>
+    <div class="row" style="margin-top:8px">
+      <button class="btn primary" type="button" id="fc-dl">Download</button>
+      <button class="btn" type="button" id="fc-copy">Copy</button>
+      <button class="btn" type="button" id="fc-print">Print / save as PDF</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2 style="margin-top:0">What this can and can’t do</h2>
+    <ul class="small">
+      <li><strong>Can:</strong> CSV ⇄ TSV ⇄ JSON ⇄ Excel (.xlsx, any sheet) ⇄ Markdown table ⇄ HTML table, and any table → SQL INSERT statements. Nested JSON is flattened to columns like <code>user.address.city</code>, and “JSON (nested)” rebuilds the nesting from those dot paths.</li>
+      <li><strong>Can:</strong> PDF → plain text, Word (.docx) → text, HTML or Markdown (headings, lists, bold, links and tables are kept).</li>
+      <li><strong>Can’t:</strong> make a real PDF file directly. Use “Print / save as PDF” and choose “Save as PDF” in your browser’s print window.</li>
+      <li><strong>Can’t:</strong> keep Excel formulas, formatting, charts or merged cells — only the values. Old .doc (Word 97) files and scanned PDFs are not supported; images in Word files are left out.</li>
+      <li><strong>Can’t:</strong> convert to Word, PowerPoint, images or YAML.</li>
+    </ul>
+  </div>
+  <p class="privacy">Your files stay on your device. Everything is converted inside this browser tab.</p>
+</main>
+<script src="../../assets/core.js"></script>
+<script src="./lib.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

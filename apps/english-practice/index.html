@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Everyday English — Brahaspati</title>
+  <meta name="description" content="Daily English practice for life and work in Australia: conversations, Aussie expressions, speaking and listening drills with scores, a grammar checker for common learner mistakes, and role-plays.">
+  <link rel="stylesheet" href="../../assets/style.css">
+  <style>
+    .ep-line { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: start; padding: 6px 0; border-bottom: 1px solid var(--line); }
+    .ep-line:last-child { border-bottom: 0; }
+    .ep-who { font-weight: 700; font-size: 13px; color: var(--muted); min-width: 70px; padding-top: 2px; }
+    .ep-line.you .ep-who { color: var(--brand); }
+    .ep-icon { border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 8px; padding: 3px 8px; cursor: pointer; font: inherit; font-size: 13px; white-space: nowrap; }
+    .ep-icon:hover { border-color: var(--brand); }
+    .ep-expr h3 { margin: 0 0 4px; }
+    .ep-expr p { margin: 4px 0; }
+    .ep-ex { font-style: italic; }
+    .ep-opts { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0; }
+    .ep-opts button.right { border-color: var(--ok); color: var(--ok); font-weight: 600; }
+    .ep-opts button.wrong { border-color: var(--bad); color: var(--bad); text-decoration: line-through; }
+    .ep-diff { font-size: 18px; line-height: 2; }
+    .ep-diff span { padding: 1px 4px; border-radius: 4px; margin-right: 2px; }
+    .ep-diff .ok { color: var(--ok); }
+    .ep-diff .missed { color: var(--bad); text-decoration: underline wavy; }
+    .ep-diff .extra { color: var(--muted); text-decoration: line-through; }
+    .ep-diff .close { color: var(--warn); }
+    .ep-score { font-size: 40px; font-weight: 800; line-height: 1; }
+    .ep-marked { white-space: pre-wrap; background: var(--code); border: 1px solid var(--line); border-radius: 8px; padding: 12px; line-height: 1.8; }
+    .ep-marked mark { background: color-mix(in srgb, var(--bad) 18%, transparent); color: inherit; border-bottom: 2px solid var(--bad); padding: 0 2px; border-radius: 3px; }
+    .ep-marked mark.style { background: color-mix(in srgb, var(--warn) 18%, transparent); border-bottom-color: var(--warn); }
+    .ep-issue { padding: 8px 0; border-bottom: 1px solid var(--line); }
+    .ep-issue:last-child { border-bottom: 0; }
+    .ep-npc { background: var(--soft); border-radius: 12px; padding: 12px 14px; margin: 10px 0; max-width: 60ch; }
+    .ep-mine { background: color-mix(in srgb, var(--brand) 12%, transparent); border-radius: 12px; padding: 10px 14px; margin: 10px 0 10px auto; max-width: 60ch; }
+    .ep-choices { display: grid; gap: 8px; }
+    .ep-choices button { text-align: left; justify-content: flex-start; white-space: normal; }
+    .ep-fb { font-size: 14px; margin: -4px 0 10px auto; max-width: 60ch; }
+    .ep-done { color: var(--ok); font-weight: 600; font-size: 13px; }
+    .ep-filters { display: grid; gap: 8px; grid-template-columns: 2fr 1fr; }
+    @media (max-width: 600px) { .ep-filters { grid-template-columns: 1fr; } .ep-line { grid-template-columns: 1fr auto; } .ep-who { grid-column: 1 / -1; padding: 0; } }
+  </style>
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <p class="eyebrow">Personal · Language</p>
+    <h1>Everyday English</h1>
+    <p class="lead">Ten minutes a day of practical English for life and work in Australia: a short conversation, three local expressions, a grammar drill and one speaking exercise — plus a grammar checker and role-plays for real situations.</p>
+    <div class="row">
+      <button class="btn primary" type="button" id="goToday">Start today’s practice</button>
+      <button class="btn" type="button" id="sample">Load sample data</button>
+    </div>
+    <p class="privacy">Your progress stays in this browser. Speech recognition in Chrome and Edge is handled by the browser, which may send audio to its own speech service; nothing is sent to this site.</p>
+  </section>
+
+  <div class="tabs" data-tabs="ep">
+    <button data-tab="today">Today</button>
+    <button data-tab="expr">Expressions</button>
+    <button data-tab="speak">Speak &amp; listen</button>
+    <button data-tab="grammar">Grammar check</button>
+    <button data-tab="roleplay">Role-play</button>
+    <button data-tab="progress">Progress</button>
+    <button data-tab="data">Backup</button>
+  </div>
+
+  <section class="tab-panel" data-panel="today">
+    <p class="muted" id="todayDate" style="margin-top:14px"></p>
+    <div class="panel" id="tConv"></div>
+    <div class="panel" id="tExpr"></div>
+    <div class="panel" id="tGram"></div>
+    <div class="panel" id="tSpeak"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="expr">
+    <div class="panel">
+      <div class="ep-filters">
+        <div><label for="exSearch">Search</label><input id="exSearch" type="search" placeholder="e.g. arvo, polite, coffee"></div>
+        <div><label for="exLevel">Type</label><select id="exLevel"><option value="">All</option><option value="neutral">Neutral — fine anywhere</option><option value="polite">Polite — great for work</option><option value="casual">Casual — friends and most workplaces</option><option value="slang">Slang — very informal</option><option value="avoid">Avoid — can offend</option><option value="learned">My learned ones</option></select></div>
+      </div>
+      <p class="small muted" id="exCount"></p>
+    </div>
+    <div class="grid" id="exList"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="speak">
+    <div class="panel">
+      <label for="spTarget">Sentence to practise</label>
+      <textarea id="spTarget" class="prose" style="min-height:70px"></textarea>
+      <div class="row" style="margin-top:8px">
+        <button class="btn" type="button" id="spListen">🔊 Listen</button>
+        <label style="margin:0;font-weight:400" for="spRate">Speed</label>
+        <input id="spRate" type="range" min="0.6" max="1.2" step="0.1" value="0.9" style="width:110px">
+        <select id="spVoice" aria-label="Voice" style="width:auto;max-width:100%"></select>
+      </div>
+      <p class="small muted" id="voiceNote"></p>
+      <div class="row" style="margin-top:10px">
+        <button class="btn primary" type="button" id="spRec">🎤 Say it</button>
+        <span id="spStatus" class="small muted"></span>
+      </div>
+      <p class="small" id="srNote"></p>
+      <details style="margin-top:8px" id="spTypeBox"><summary>Or type what you said</summary>
+        <input id="spTyped" type="text" placeholder="Type the sentence as you said it">
+        <button class="btn small" type="button" id="spTypedGo" style="margin-top:6px">Score it</button>
+      </details>
+    </div>
+    <div id="spResult"></div>
+    <div class="panel"><h2 style="margin-top:0">More sentences to practise</h2><div id="spList"></div></div>
+  </section>
+
+  <section class="tab-panel" data-panel="grammar">
+    <div class="panel">
+      <label for="gText">Paste or type an email, message or answer</label>
+      <textarea id="gText" class="prose" style="min-height:160px" placeholder="e.g. Hi Sam, i am agree with you. I am working here since 3 years and we discussed about this before."></textarea>
+      <div class="row" style="margin-top:8px"><button class="btn primary" type="button" id="gCheck">Check my English</button><button class="btn" type="button" id="gExample">Try an example</button></div>
+      <p class="small muted">This checker looks for common learner mistakes (articles, “I am agree”, “since 2 years”, “discuss about”, its/it’s, your/you’re and more) and phrases that sound unusual in Australia. It won’t catch everything — it is a set of rules, not a person.</p>
+    </div>
+    <div id="gOut"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="roleplay">
+    <div id="rpList" class="grid" style="margin-top:14px"></div>
+    <div id="rpPlay"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="progress">
+    <div class="stat-row" id="pStats" style="margin-top:14px"></div>
+    <div class="cols-2">
+      <div class="panel"><h2 style="margin-top:0">Speaking scores</h2><div id="pSpeech"></div></div>
+      <div class="panel"><h2 style="margin-top:0">Last 14 days</h2><div id="pDays"></div></div>
+    </div>
+    <div class="panel"><h2 style="margin-top:0">Role-plays</h2><div id="pRole"></div></div>
+  </section>
+
+  <section class="tab-panel" data-panel="data">
+    <div class="panel">
+      <h2 style="margin-top:0">Backup and restore</h2>
+      <p>Your progress lives in this browser only. Download a backup to move it to another device.</p>
+      <div class="row">
+        <button class="btn primary" type="button" id="exportJson">Download backup (JSON)</button>
+        <button class="btn" type="button" id="importJson">Restore from backup</button>
+        <button class="btn" type="button" id="clearAll">Reset my progress</button>
+      </div>
+    </div>
+  </section>
+</main>
+<script src="../../assets/core.js"></script>
+<script src="../../assets/ai.js"></script>
+<script src="./lib.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

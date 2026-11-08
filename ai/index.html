@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI settings — Brahaspati</title>
+  <meta name="description" content="Turn on the optional AI helper: a private in-browser model or your own free Gemini key.">
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <p class="eyebrow">Optional</p>
+    <h1>AI helper settings</h1>
+    <p class="lead">Every tool works without AI. Turning a helper on adds “✨” buttons that draft, rewrite and summarise. Pick one:</p>
+  </section>
+  <div class="panel">
+    <label><input type="radio" name="p" value="off"> Off (default) — nothing is ever sent anywhere</label>
+    <label><input type="radio" name="p" value="local"> In-browser model — fully private and free. Needs Chrome or Edge with WebGPU and a one-off download of about 1 GB.</label>
+    <label><input type="radio" name="p" value="gemini"> Google Gemini with your own free key — faster and smarter. The text you ask about goes to Google.</label>
+    <div id="gem" hidden>
+      <p class="small">Get a free key at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> (sign in with Google, then “Create API key”). The key is stored only in this browser.</p>
+      <label for="key">Gemini API key</label><input id="key" type="password" autocomplete="off">
+      <label for="model">Model</label><input id="model" type="text">
+    </div>
+    <div id="loc" hidden>
+      <label for="lmodel">In-browser model</label>
+      <select id="lmodel">
+        <option value="Llama-3.2-1B-Instruct-q4f16_1-MLC">Llama 3.2 1B (smallest, about 0.9 GB)</option>
+        <option value="Qwen2.5-1.5B-Instruct-q4f16_1-MLC">Qwen 2.5 1.5B (about 1.2 GB)</option>
+        <option value="Llama-3.2-3B-Instruct-q4f16_1-MLC">Llama 3.2 3B (better, about 2.3 GB)</option>
+      </select>
+    </div>
+    <div class="row" style="margin-top:14px"><button class="btn primary" id="save">Save</button><button class="btn" id="test">Test it</button><span id="st" class="small muted"></span></div>
+  </div>
+</main>
+<script src="../assets/core.js"></script>
+<script src="../assets/ai.js"></script>
+<script>
+(function () {
+  var s = B.ai.settings();
+  B.$$('input[name=p]').forEach(function (r) { r.checked = r.value === s.provider; r.addEventListener('change', sync); });
+  B.$('#key').value = s.geminiKey; B.$('#model').value = s.geminiModel; B.$('#lmodel').value = s.localModel;
+  function cur() { var r = B.$('input[name=p]:checked'); return r ? r.value : 'off'; }
+  function sync() { B.$('#gem').hidden = cur() !== 'gemini'; B.$('#loc').hidden = cur() !== 'local'; }
+  sync();
+  function save() { B.ai.save({ provider: cur(), geminiKey: B.$('#key').value.trim(), geminiModel: B.$('#model').value.trim() || B.ai.DEFAULTS.geminiModel, localModel: B.$('#lmodel').value }); }
+  B.$('#save').onclick = function () { save(); B.toast('Saved'); };
+  B.$('#test').onclick = function () {
+    save(); var st = B.$('#st'); st.textContent = 'Asking…';
+    B.ai.ask('Reply with exactly: Hello from your AI helper.', { onProgress: function (t) { st.textContent = t; } })
+      .then(function (a) { st.textContent = 'Works: ' + a.slice(0, 80); }, function (e) { st.textContent = e.message; });
+  };
+})();
+</script>
+</body>
+</html>

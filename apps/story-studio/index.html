@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Story Studio — Brahaspati</title>
+  <meta name="description" content="Build AI story videos scene by scene: a character library with reference images, a continuity checker, dialogue, a Hindi-to-English phrasebook, hooks and endings, and prompts exported for different AI video tools.">
+  <link rel="stylesheet" href="../../assets/style.css">
+  <style>
+    .field-grid { display: grid; gap: 0 14px; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
+    .checks label { display: inline-flex; gap: 6px; align-items: center; font-weight: 400; margin: 4px 12px 4px 0; }
+    .char-card { display: grid; grid-template-columns: 72px 1fr; gap: 12px; align-items: start; }
+    .char-card img, .char-card .ph { width: 72px; height: 72px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); background: var(--soft); }
+    .char-card pre { white-space: pre-wrap; margin: 6px 0; }
+    .scene-head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: space-between; }
+    .dl { display: grid; grid-template-columns: minmax(90px, 140px) 1fr auto; gap: 6px; margin: 4px 0; align-items: center; }
+    .dl .hi { grid-column: 2 / 3; }
+    @media (max-width: 520px) { .dl { grid-template-columns: 1fr auto; } .dl select { grid-column: 1 / 3; } .dl .hi { grid-column: 1 / 2; } }
+    .warns li { margin: 6px 0; }
+    .sugg button { margin: 3px 4px 3px 0; text-align: left; }
+    details summary { cursor: pointer; font-size: 14px; color: var(--muted); }
+    details pre { white-space: pre-wrap; }
+    .match { border-bottom: 1px solid var(--line); padding: 8px 0; }
+    .match .en { font-size: 17px; font-weight: 600; }
+    #exportText { min-height: 320px; }
+    .hook { display: flex; justify-content: space-between; gap: 8px; align-items: center; border-bottom: 1px solid var(--line); padding: 6px 0; }
+  </style>
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <p class="eyebrow">Creators · AI video stories</p>
+    <h1>AI Story Studio</h1>
+    <p class="lead">Keep characters looking the same in every scene, catch continuity mistakes before you generate, write dialogue (with a Hindi-to-English phrasebook), pick hooks and endings, and export prompts ready for your AI video tool.</p>
+  </section>
+
+  <div class="panel">
+    <div class="row">
+      <label for="storySel" style="margin:0">Story</label>
+      <select id="storySel" style="max-width:280px"></select>
+      <button class="btn" id="storyNew">New story</button>
+      <button class="btn" id="sample">Load sample data</button>
+      <button class="btn" id="export">Export backup</button>
+      <button class="btn" id="import">Import backup</button>
+      <button class="btn" id="clear">Clear all</button>
+    </div>
+    <p class="privacy">Characters, images and stories are saved in this browser only. Nothing is uploaded unless you use an AI button with your own AI helper turned on. <span id="usage"></span></p>
+    <div id="aiNote"></div>
+  </div>
+
+  <div class="tabs" data-tabs="ss">
+    <button data-tab="chars">Characters</button>
+    <button data-tab="story">Scenes</button>
+    <button data-tab="check">Continuity</button>
+    <button data-tab="hooks">Hooks &amp; endings</button>
+    <button data-tab="hindi">Hindi → English</button>
+    <button data-tab="export">Export</button>
+  </div>
+
+  <section class="tab-panel" data-panel="chars">
+    <div class="cols-2">
+      <div class="panel">
+        <h2 style="margin-top:0" id="cfTitle">Add a character</h2>
+        <form id="charForm">
+          <input type="hidden" id="cId">
+          <div class="field-grid">
+            <div><label for="cName">Name</label><input type="text" id="cName" required></div>
+            <div><label for="cAge">Age</label><input type="number" id="cAge" min="0" max="120"></div>
+          </div>
+          <label for="cAliases">Other names (comma separated)</label><input type="text" id="cAliases" placeholder="Dadi, Amma">
+          <label for="cLook">Look</label><input type="text" id="cLook" placeholder="silver hair in a low bun, round steel glasses">
+          <label for="cOutfit">Outfit</label><input type="text" id="cOutfit" placeholder="green cotton saree, beige shawl">
+          <label for="cVoice">Voice</label><input type="text" id="cVoice" placeholder="soft, slow Hindi">
+          <label for="cTraits">Personality</label><input type="text" id="cTraits" placeholder="proud, secretly generous">
+          <label for="imgInput">Reference image (optional)</label>
+          <input type="file" id="imgInput" accept="image/*">
+          <p class="small muted" id="imgNote">Images are shrunk to under 200 KB and kept in this browser. Browsers allow roughly 5 MB per site, so keep to a handful.</p>
+          <div id="imgPreview"></div>
+          <div class="row" style="margin-top:12px"><button class="btn primary" type="submit">Save character</button><button class="btn" type="button" id="cCancel">Clear form</button></div>
+        </form>
+      </div>
+      <div><div id="charList"></div></div>
+    </div>
+  </section>
+
+  <section class="tab-panel" data-panel="story">
+    <div class="panel">
+      <div class="field-grid">
+        <div><label for="sTitle">Story title</label><input type="text" id="sTitle"></div>
+        <div><label for="sAspect">Aspect ratio</label><select id="sAspect"><option value="9:16">9:16 vertical (Reels, Shorts)</option><option value="16:9">16:9 widescreen</option><option value="1:1">1:1 square</option><option value="4:5">4:5 feed</option></select></div>
+      </div>
+      <label for="sLog">One-line story</label><textarea class="prose" id="sLog" style="min-height:60px"></textarea>
+      <label for="sStyle">Visual style (added to every prompt)</label><input type="text" id="sStyle">
+    </div>
+    <div id="scenes"></div>
+    <div class="row"><button class="btn primary" id="addScene">Add scene</button><span id="aiStory"></span></div>
+  </section>
+
+  <section class="tab-panel" data-panel="check">
+    <div class="panel">
+      <p class="muted" style="margin-top:0">Checks every scene against your character library: outfits, ages, characters who appear after leaving or dying, names that are missing or misspelt, time of day going backwards, and jumps between places. <b>Warnings</b> are likely mistakes; <b>notes</b> are worth a look.</p>
+      <div class="stat-row" id="checkStats"></div>
+      <ul class="warns" id="checkOut"></ul>
+    </div>
+  </section>
+
+  <section class="tab-panel" data-panel="hooks">
+    <div class="panel">
+      <div class="field-grid">
+        <div><label for="hMain">Main character</label><select id="hMain"></select></div>
+        <div><label for="hOther">Second character</label><select id="hOther"></select></div>
+      </div>
+      <h2>Hooks for the first 3 seconds</h2>
+      <div id="hookList"></div>
+      <div id="aiHooks"></div>
+    </div>
+    <div class="panel">
+      <h2 style="margin-top:0">Endings</h2>
+      <div class="tabs" style="margin-top:0" id="endTabs"></div>
+      <div id="endList"></div>
+    </div>
+  </section>
+
+  <section class="tab-panel" data-panel="hindi">
+    <div class="panel">
+      <p class="muted" style="margin-top:0">Type Hindi (देवनागरी) or Hinglish (romanised), one line at a time, or an English line to find the Hindi. Without AI this matches against a built-in phrasebook of about 150 everyday emotional and family lines — it is a phrase finder, not a full translator. Turn on the AI helper for full translation.</p>
+      <label for="hiIn">Your line(s)</label>
+      <textarea class="prose" id="hiIn" style="min-height:90px" placeholder="maa ki yaad aati hai&#10;मुझे सच बताओ"></textarea>
+      <div class="row" style="margin-top:8px"><span id="aiHindi"></span></div>
+      <div id="aiHindiOut"></div>
+      <div id="hiOut"></div>
+    </div>
+    <details class="panel">
+      <summary>Browse the whole phrasebook</summary>
+      <input type="search" id="pbFilter" placeholder="Filter…" aria-label="Filter phrasebook" style="margin:10px 0">
+      <div id="pbTable"></div>
+    </details>
+  </section>
+
+  <section class="tab-panel" data-panel="export">
+    <div class="panel">
+      <div class="field-grid">
+        <div><label for="preset">Prompt format</label><select id="preset"></select></div>
+      </div>
+      <p class="small muted" id="presetNote"></p>
+      <textarea id="exportText" readonly aria-label="Exported prompts"></textarea>
+      <div class="row" style="margin-top:10px">
+        <button class="btn primary" id="exCopy">Copy</button>
+        <button class="btn" id="exMd">Download Markdown</button>
+        <button class="btn" id="exCsv">Download CSV</button>
+        <button class="btn" id="exJson">Download JSON</button>
+      </div>
+    </div>
+  </section>
+</main>
+<script src="../../assets/core.js"></script>
+<script src="../../assets/ai.js"></script>
+<script src="./phrases.js"></script>
+<script src="./lib.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

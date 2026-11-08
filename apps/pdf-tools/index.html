@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PDF Intelligence — Brahaspati</title>
+<meta name="description" content="Pull text and tables out of PDFs, compare two versions line by line, search inside and get a quick summary. Runs in your browser — files are not uploaded.">
+<link rel="stylesheet" href="../../assets/style.css">
+<style>
+  .pt-diff { font-family: var(--mono); font-size: 13px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .pt-diff div { padding: 2px 8px; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .pt-diff .add { background: color-mix(in srgb, var(--ok) 16%, transparent); }
+  .pt-diff .del { background: color-mix(in srgb, var(--bad) 14%, transparent); text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--bad) 60%, transparent); }
+  .pt-diff .skip { color: var(--muted); font-style: italic; background: var(--soft); }
+  .pt-diff .add::before { content: '+ '; color: var(--ok); }
+  .pt-diff .del::before { content: '− '; color: var(--bad); }
+  .pt-diff .same::before { content: '  '; }
+  .pt-hit { padding: 8px 0; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+  .pt-hit button { background: none; border: 0; padding: 0; color: var(--accent); text-decoration: underline; cursor: pointer; font: inherit; font-size: 13px; }
+  mark { background: color-mix(in srgb, var(--brand) 28%, transparent); color: inherit; border-radius: 3px; }
+  .pt-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+  .pt-file { font-weight: 600; overflow-wrap: anywhere; }
+  .pt-inline { display: inline-flex; gap: 6px; align-items: center; font-weight: 400; margin: 0; }
+  .pt-inline input { width: auto; }
+  .pt-sel { max-width: 220px; }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <p class="eyebrow">Utilities · PDF</p>
+    <h1>PDF Intelligence</h1>
+    <p class="lead">Pull the text and tables out of a PDF, compare two versions line by line, search inside it and get a quick summary of a long document.</p>
+  </section>
+
+  <div class="panel">
+    <div class="drop" id="pt-drop"><strong>Drop a PDF here</strong> or click to choose</div>
+    <div class="row" style="margin-top:10px">
+      <button class="btn" type="button" id="pt-sample">Try with a sample PDF</button>
+      <span class="pt-file" id="pt-name"></span>
+      <span class="small muted" id="pt-status" aria-live="polite"></span>
+    </div>
+    <div class="stat-row" id="pt-stats" style="margin-top:12px" hidden></div>
+  </div>
+
+  <div class="tabs" data-tabs="pt">
+    <button data-tab="text">Text</button>
+    <button data-tab="tables">Tables</button>
+    <button data-tab="compare">Compare two PDFs</button>
+    <button data-tab="summary">Summary</button>
+    <button data-tab="search">Search</button>
+  </div>
+
+  <section class="tab-panel" data-panel="text">
+    <div class="panel">
+      <div class="row">
+        <label for="pt-page" class="pt-inline">Show <select id="pt-page" class="pt-sel"></select></label>
+        <button class="btn small" type="button" id="pt-dl-text">Download .txt</button>
+        <button class="btn small" type="button" id="pt-copy-text">Copy</button>
+      </div>
+      <pre id="pt-text" class="pt-text" style="margin-top:10px">Open a PDF to see its text.</pre>
+    </div>
+  </section>
+
+  <section class="tab-panel" data-panel="tables" hidden>
+    <div class="panel">
+      <p class="small muted" style="margin-top:0">Works on simple, digitally made PDFs (bank statements, invoices, reports) where each cell sits in a clear column. It reads the position of each piece of text — it can’t see ruled lines, merged cells or scanned images, so check the result.</p>
+      <div class="row">
+        <label for="pt-tpage" class="pt-inline">Page <select id="pt-tpage" class="pt-sel"></select></label>
+        <label class="pt-inline"><input type="checkbox" id="pt-only" checked> Only rows with 2+ columns</label>
+        <label class="pt-inline">Join gap <input type="number" id="pt-gap" value="6" min="0" max="40" style="width:70px"></label>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <button class="btn small" type="button" id="pt-dl-csv">Download CSV</button>
+        <button class="btn small" type="button" id="pt-dl-xlsx">Download Excel</button>
+        <span class="small muted" id="pt-tinfo"></span>
+      </div>
+      <div id="pt-table" style="margin-top:10px"></div>
+      <p class="small muted">If words from one cell land in two columns, raise “Join gap”. If two columns merge, lower it.</p>
+    </div>
+  </section>
+
+  <section class="tab-panel" data-panel="compare" hidden>
+    <div class="panel">
+      <div class="cols-2">
+        <div><h3 style="margin-top:0">Original (A)</h3><div class="drop" id="pt-drop-a">Drop PDF A</div><p class="small pt-file" id="pt-a-name"></p></div>
+        <div><h3 style="margin-top:0">New version (B)</h3><div class="drop" id="pt-drop-b">Drop PDF B</div><p class="small pt-file" id="pt-b-name"></p></div>
+      </div>
+      <div class="row">
+        <button class="btn" type="button" id="pt-sample-pair">Try with two sample versions</button>
+        <button class="btn small" type="button" id="pt-use-main">Use the PDF above as A</button>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <label class="pt-inline"><input type="checkbox" id="pt-bypage" checked> Compare page by page</label>
+        <label class="pt-inline"><input type="checkbox" id="pt-onlychg" checked> Only show changed pages</label>
+      </div>
+      <p class="small muted">Untick “page by page” when text has moved between pages. Spacing differences are ignored.</p>
+      <div id="pt-cmp" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <section class="tab-panel" data-panel="summary" hidden>
+    <div class="panel">
+      <div class="row">
+        <label for="pt-n" class="pt-inline">Key sentences <select id="pt-n"><option>3</option><option selected>5</option><option>8</option><option>12</option></select></label>
+        <span id="pt-ai-slot"></span>
+      </div>
+      <div id="pt-sum"><p class="muted">Open a PDF to summarise it.</p></div>
+      <p class="small muted">Without AI, the summary is made of the document’s own sentences that share the most important words — nothing is rewritten.</p>
+      <div id="pt-ai-out"></div>
+      <div id="pt-ai-note"></div>
+    </div>
+  </section>
+
+  <section class="tab-panel" data-panel="search" hidden>
+    <div class="panel">
+      <div class="row">
+        <input type="search" id="pt-q" placeholder="Find text in the PDF" style="flex:1;min-width:180px">
+        <button class="btn primary" type="button" id="pt-find">Find</button>
+      </div>
+      <div class="row" style="margin-top:6px">
+        <label class="pt-inline"><input type="checkbox" id="pt-case"> Match case</label>
+        <label class="pt-inline"><input type="checkbox" id="pt-regex"> Pattern (regex)</label>
+      </div>
+      <div id="pt-hits" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <p class="privacy">Your files stay on your device. PDFs are read in this browser with pdf.js and never uploaded.</p>
+</main>
+<script src="../../assets/core.js"></script>
+<script src="../../assets/ai.js"></script>
+<script src="./lib.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

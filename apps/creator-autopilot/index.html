@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Creator Autopilot — Brahaspati</title>
+  <meta name="description" content="Plan a short-video story series: story ideas, a character bible for consistent faces, scene breakdowns, image and video prompts, titles, captions, hashtags, a publishing calendar and a performance log.">
+  <link rel="stylesheet" href="../../assets/style.css">
+  <style>
+    .cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; }
+    .cal .dow { font-size: 11px; color: var(--muted); text-align: center; padding: 2px 0; }
+    .cal .day { min-height: 64px; border: 1px solid var(--line); border-radius: 6px; padding: 2px; background: var(--panel); min-width: 0; overflow: hidden; }
+    .cal .day.blank { background: transparent; border-style: dashed; opacity: .4; }
+    .cal .day.over { border-color: var(--brand); background: var(--soft); }
+    .cal .day.today { border-color: var(--accent); }
+    .cal .num { font-size: 11px; color: var(--muted); }
+    .chip { display: block; font-size: 11px; line-height: 1.3; padding: 1px 4px; margin: 2px 0; border-radius: 4px; cursor: grab; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      background: var(--soft); border-left: 3px solid var(--muted); color: var(--ink); width: 100%; text-align: left; font-family: inherit; border-top: 0; border-right: 0; border-bottom: 0; }
+    .chip.s-idea { border-left-color: var(--muted); } .chip.s-scripted { border-left-color: var(--accent); }
+    .chip.s-produced { border-left-color: var(--warn); } .chip.s-posted { border-left-color: var(--ok); }
+    .concept { display: flex; flex-direction: column; gap: 8px; }
+    .concept p { color: var(--ink); font-size: 15px; }
+    .scene { border-top: 1px solid var(--line); padding-top: 10px; margin-top: 10px; }
+    .scene pre { white-space: pre-wrap; max-height: 220px; }
+    .field-grid { display: grid; gap: 0 14px; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+    .checks label { display: inline-flex; gap: 6px; align-items: center; font-weight: 400; margin: 4px 12px 4px 0; }
+    .table-wrap input[type=number] { width: 90px; padding: 4px 6px; }
+    .table-wrap select, .table-wrap input[type=date] { width: auto; padding: 4px 6px; font-size: 13px; }
+  </style>
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <p class="eyebrow">Creators · story series</p>
+    <h1>Creator Autopilot</h1>
+    <p class="lead">Plan a short-video story series from idea to posted: story concepts, a character bible that keeps faces consistent, scene-by-scene timing, image and video prompts, titles, captions, hashtags, a publishing calendar and a simple performance log.</p>
+  </section>
+
+  <div class="panel no-print">
+    <div class="row">
+      <label for="seriesName" style="margin:0">Series</label>
+      <input type="text" id="seriesName" placeholder="e.g. Maa ki Chitthi — family stories" style="max-width:340px">
+      <button class="btn" id="sample">Load sample data</button>
+      <button class="btn" id="export">Export backup</button>
+      <button class="btn" id="import">Import backup</button>
+      <button class="btn" id="clear">Clear all</button>
+    </div>
+    <p class="privacy">Your series, characters and stats are saved in this browser only. Nothing is uploaded. Export a backup to move to another device.</p>
+    <div id="aiNote"></div>
+  </div>
+
+  <div class="tabs" data-tabs="main">
+    <button data-tab="ideas">Ideas</button>
+    <button data-tab="chars">Characters</button>
+    <button data-tab="scenes">Scenes &amp; prompts</button>
+    <button data-tab="titles">Titles &amp; tags</button>
+    <button data-tab="cal">Calendar</button>
+    <button data-tab="perf">Performance</button>
+  </div>
+
+  <section class="tab-panel" data-panel="ideas">
+    <div class="panel">
+      <h2 style="margin-top:0">Story concept generator</h2>
+      <p class="muted small">Mixes genre, emotion, setting, main character and twist. The same shuffle code always gives the same ideas, so you can come back to a list.</p>
+      <div class="field-grid">
+        <div><label for="seed">Shuffle code</label><input type="text" id="seed"></div>
+        <div><label for="genre">Genre</label><select id="genre"></select></div>
+        <div><label for="emotion">Emotion</label><select id="emotion"></select></div>
+      </div>
+      <div class="row" style="margin-top:12px"><button class="btn primary" id="gen">Generate ideas</button><button class="btn" id="reshuffle">Shuffle again</button><span id="aiIdeas"></span></div>
+    </div>
+    <div class="grid" id="concepts"></div>
+    <h2>Saved concepts</h2>
+    <div id="saved"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="chars">
+    <div class="cols-2">
+      <div class="panel">
+        <h2 style="margin-top:0" id="charFormTitle">Add a character</h2>
+        <form id="charForm">
+          <input type="hidden" id="cId">
+          <label for="cName">Name</label><input type="text" id="cName" required>
+          <label for="cAge">Age</label><input type="number" id="cAge" min="0" max="120">
+          <label for="cLook">Look (face, hair, build, skin tone)</label><input type="text" id="cLook" placeholder="round face, grey hair in a bun, small gold nose stud">
+          <label for="cOutfit">Outfit</label><input type="text" id="cOutfit" placeholder="faded green cotton saree, brown shawl">
+          <label for="cVoice">Voice</label><input type="text" id="cVoice" placeholder="soft, slightly hoarse, slow Hindi">
+          <label for="cTraits">Traits</label><input type="text" id="cTraits" placeholder="proud, secretly generous, hides worry with jokes">
+          <div class="row" style="margin-top:12px"><button class="btn primary" type="submit">Save character</button><button class="btn" type="reset" id="cReset">Clear form</button></div>
+        </form>
+      </div>
+      <div>
+        <p class="muted">Each character gets a <b>consistency block</b> — a short description added to every prompt so the AI draws the same face, age and outfit in each scene.</p>
+        <div id="charList"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="tab-panel" data-panel="scenes">
+    <div class="panel">
+      <div class="row">
+        <label for="epSel" style="margin:0">Episode</label>
+        <select id="epSel" style="max-width:320px"></select>
+        <button class="btn" id="epNew">New episode</button>
+        <button class="btn" id="epDel">Delete episode</button>
+      </div>
+      <div id="epForm"></div>
+    </div>
+    <div id="sceneOut"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="titles">
+    <div class="panel">
+      <p class="muted small" id="titleFor"></p>
+      <h2 style="margin-top:0">Titles</h2>
+      <p class="small muted">Ten proven hook formulas, filled in from the current episode.</p>
+      <div id="titleList"></div>
+      <div id="aiTitles"></div>
+    </div>
+    <div class="cols-2">
+      <div class="panel">
+        <h2 style="margin-top:0">Caption</h2>
+        <div class="row"><label for="capPlatform" style="margin:0">Platform</label><select id="capPlatform" style="max-width:240px"></select><button class="btn small" id="capNext">Another version</button></div>
+        <textarea class="prose" id="caption" style="margin-top:10px"></textarea>
+        <div class="row" style="margin-top:8px"><button class="btn small" id="capCopy">Copy caption + hashtags</button><span class="small muted" id="capLen"></span></div>
+      </div>
+      <div class="panel">
+        <h2 style="margin-top:0">Hashtags</h2>
+        <div class="checks" id="tagTopics"></div>
+        <label for="tagCustom">Your own tags (comma separated)</label><input type="text" id="tagCustom" placeholder="MaaKiChitthi, YourChannel">
+        <label style="font-weight:400"><input type="checkbox" id="tagAll"> Use the platform's maximum instead of the suggested number</label>
+        <pre id="tagOut" style="white-space:pre-wrap"></pre>
+        <p class="small muted" id="tagNote"></p>
+      </div>
+    </div>
+  </section>
+
+  <section class="tab-panel" data-panel="cal">
+    <div class="panel">
+      <div class="row" style="justify-content:space-between">
+        <div class="row"><button class="btn small" id="calPrev" aria-label="Previous month">‹</button><h2 id="calTitle" style="margin:0;font-size:19px"></h2><button class="btn small" id="calNext" aria-label="Next month">›</button></div>
+        <div class="small muted"><span class="pill-ok">posted</span> <span class="pill-warn">produced</span> <span class="tag">scripted</span> <span class="tag">idea</span></div>
+      </div>
+      <p class="small muted">Drag a post onto another day to move it, or change the date in the list below.</p>
+      <div class="cal" id="cal"></div>
+    </div>
+    <div class="panel">
+      <h2 style="margin-top:0">Add a post</h2>
+      <form id="postForm" class="field-grid">
+        <div><label for="pTitle">Title</label><input type="text" id="pTitle" required></div>
+        <div><label for="pEpisode">Episode (optional)</label><select id="pEpisode"></select></div>
+        <div><label for="pPlatform">Platform</label><select id="pPlatform"></select></div>
+        <div><label for="pDate">Date</label><input type="date" id="pDate"></div>
+        <div><label for="pStatus">Status</label><select id="pStatus"></select></div>
+        <div style="align-self:end;padding-top:10px"><button class="btn primary" type="submit">Add to calendar</button></div>
+      </form>
+    </div>
+    <h2>Posts this month</h2>
+    <div id="postList"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="perf">
+    <p class="muted">Type in the numbers from each platform's insights a few days after posting. Engagement = (likes + shares + comments) ÷ views.</p>
+    <div class="stat-row" id="perfStats"></div>
+    <h2>Log your numbers</h2>
+    <div id="perfTable"></div>
+    <div class="cols-2">
+      <div class="panel"><h3 style="margin-top:0">Views per post</h3><div id="chartViews"></div></div>
+      <div class="panel"><h3 style="margin-top:0">Engagement rate per post</h3><div id="chartEng"></div></div>
+    </div>
+    <div class="panel"><h3 style="margin-top:0">Average views by platform</h3><div id="chartPlat"></div></div>
+  </section>
+</main>
+<script src="../../assets/core.js"></script>
+<script src="../../assets/ai.js"></script>
+<script src="./lib.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Website Health Checker — Brahaspati</title>
+  <meta name="description" content="Free website check: speed, Core Web Vitals, accessibility, SEO and best practice scores from Google PageSpeed Insights, explained in plain English, plus security header grading and a link extractor.">
+  <link rel="stylesheet" href="../../assets/style.css">
+  <style>
+    .check-form { display: grid; gap: 10px; grid-template-columns: 1fr auto; align-items: end; }
+    @media (max-width: 560px) { .check-form { grid-template-columns: 1fr; } }
+    .radio-row { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 8px; }
+    .radio-row label { display: flex; gap: 6px; align-items: center; font-weight: 400; margin: 0; }
+    .gauges { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); margin: 12px 0; }
+    .gauge-card { --c: var(--muted); background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; text-align: center; }
+    .gauge { --p: 0; width: 86px; height: 86px; border-radius: 50%; margin: 0 auto 8px; display: grid; place-items: center;
+      background: conic-gradient(var(--c) calc(var(--p) * 1%), var(--soft) 0); }
+    .gauge span { width: 68px; height: 68px; border-radius: 50%; background: var(--panel); display: grid; place-items: center; font-size: 24px; font-weight: 700; color: var(--c); }
+    .r-good { --c: var(--ok); color: var(--ok); } .r-needs-work { --c: var(--warn); color: var(--warn); } .r-poor { --c: var(--bad); color: var(--bad); } .r-na { --c: var(--muted); color: var(--muted); }
+    .finding { border-top: 1px solid var(--line); padding: 10px 0; }
+    .finding:first-child { border-top: 0; }
+    .finding h4 { margin: 0 0 4px; font-size: 15px; }
+    .finding p { margin: 4px 0 0; }
+    .checklist { list-style: none; padding: 0; margin: 0; columns: 2 280px; }
+    .checklist li { margin: 3px 0; break-inside: avoid; font-size: 14px; }
+    .note { background: var(--soft); border-radius: 8px; padding: 10px 14px; }
+    details summary { cursor: pointer; font-weight: 600; }
+    pre.cmd { white-space: pre-wrap; word-break: break-all; }
+    .status-line { min-height: 1.5em; }
+  </style>
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <p class="eyebrow">Business · websites</p>
+    <h1>Website Health Checker</h1>
+    <p class="lead">Check any public website for speed, accessibility, SEO and best practice. You get Google's scores, Core Web Vitals and a plain-English list of what to fix first, plus a report you can send to your web developer.</p>
+  </section>
+
+  <div class="panel">
+    <form id="checkForm" class="check-form" novalidate>
+      <div><label for="url">Website address</label><input type="url" id="url" placeholder="yourbusiness.com.au" autocomplete="url" inputmode="url"></div>
+      <div class="row"><button class="btn primary" type="submit" id="run">Check website</button><button class="btn" type="button" id="sample">Load sample data</button></div>
+    </form>
+    <div class="radio-row" role="radiogroup" aria-label="Device">
+      <label><input type="radio" name="strategy" value="mobile" checked> Phone</label>
+      <label><input type="radio" name="strategy" value="desktop"> Desktop</label>
+    </div>
+    <p class="status-line small" id="status" role="status" aria-live="polite"></p>
+    <details id="keyBox">
+      <summary>Use your own free Google key (recommended)</summary>
+      <p class="small">Tests run on Google's free PageSpeed Insights service. Without a key you share a small daily limit with everyone else, and it is often used up. A key of your own is free and allows about 25,000 tests a day.</p>
+      <ol class="small">
+        <li>Open <a href="https://developers.google.com/speed/docs/insights/v5/get-started#APIKey" target="_blank" rel="noopener">PageSpeed Insights: get a key</a> and press <b>Get a Key</b> (sign in with any Google account).</li>
+        <li>Copy the key (it starts with <code>AIza</code>) and paste it below.</li>
+        <li>Optional but wise: in Google Cloud → Credentials, restrict the key to the PageSpeed Insights API.</li>
+      </ol>
+      <div class="row"><input type="password" id="apiKey" placeholder="AIza…" aria-label="Google API key" autocomplete="off" style="max-width:340px"><button class="btn small" type="button" id="saveKey">Save key</button><button class="btn small" type="button" id="clearKey">Remove key</button></div>
+      <p class="privacy">The key is stored only in this browser and sent only to Google with each test.</p>
+    </details>
+    <p class="privacy">The address you type is sent to Google's PageSpeed Insights service to be tested. Nothing else leaves your browser.</p>
+  </div>
+
+  <div id="results" hidden>
+    <div class="row" style="justify-content:space-between">
+      <div><h2 id="resTitle" style="margin:16px 0 0"></h2><p class="small muted" id="resMeta" style="margin:2px 0 0"></p></div>
+      <div class="row"><button class="btn" type="button" id="dlReport">Download report</button><button class="btn" type="button" id="printReport">Print / save PDF</button></div>
+    </div>
+    <div class="gauges" id="gauges"></div>
+    <p class="small muted">90–100 good · 50–89 needs work · 0–49 poor. Scores move a few points between runs.</p>
+
+    <h2>Fix these first</h2>
+    <div class="panel" id="topFixes"></div>
+    <div id="aiBox"></div><div id="aiOut"></div>
+
+    <h2>Core Web Vitals</h2>
+    <p class="small muted">Google uses the three starred measures in search ranking. "Real visitors" comes from Chrome users over the last 28 days and only exists for sites with enough traffic; "lab test" is one simulated visit.</p>
+    <div id="vitals"></div>
+
+    <h2>Everything Google flagged</h2>
+    <div class="tabs" data-tabs="cats">
+      <button data-tab="performance">Performance</button>
+      <button data-tab="accessibility">Accessibility</button>
+      <button data-tab="best-practices">Best practices</button>
+      <button data-tab="seo">SEO</button>
+    </div>
+    <section class="tab-panel" data-panel="performance"><div class="panel" id="cat-performance"></div></section>
+    <section class="tab-panel" data-panel="accessibility"><div class="panel" id="cat-accessibility"></div></section>
+    <section class="tab-panel" data-panel="best-practices"><div class="panel" id="cat-best-practices"></div></section>
+    <section class="tab-panel" data-panel="seo"><div class="panel" id="cat-seo"></div></section>
+  </div>
+
+  <h2>Security headers</h2>
+  <div class="panel">
+    <p class="note small"><b>Why you need to paste:</b> browsers deliberately stop one website from reading another website's security headers (this is called CORS), so this page cannot fetch them for you. Run the command below in Terminal (Mac/Linux) or PowerShell (Windows 10+, type <code>curl.exe</code>), then paste what it prints.</p>
+    <div class="row"><pre class="cmd" id="curlCmd" style="flex:1;margin:0">curl -sIL 'https://yourbusiness.com.au/'</pre><button class="btn small" type="button" id="copyCurl">Copy</button></div>
+    <p class="small muted">No terminal? In Chrome, open your site, press F12 → Network → click the first row → Headers → copy the "Response Headers".</p>
+    <label for="hdrText">Paste the response headers</label>
+    <textarea id="hdrText" placeholder="HTTP/2 200&#10;strict-transport-security: max-age=31536000&#10;…"></textarea>
+    <button class="btn primary" type="button" id="gradeHdr" style="margin-top:8px">Grade headers</button>
+    <div id="hdrOut"></div>
+  </div>
+
+  <h2>Broken links</h2>
+  <div class="panel">
+    <p class="note small"><b>Honest limit:</b> for the same CORS reason, a web page cannot test whether links on other sites work. This tool collects the links for you and writes a free script that checks them on your own computer or on GitHub.</p>
+    <label for="linkText">Paste the page's HTML (View source, Ctrl/Cmd+U, select all, copy) or a list of URLs</label>
+    <textarea id="linkText"></textarea>
+    <label for="linkBase">Page address (to turn relative links like /contact into full ones)</label>
+    <input type="url" id="linkBase" placeholder="https://yourbusiness.com.au/">
+    <button class="btn primary" type="button" id="extract" style="margin-top:8px">Collect links</button>
+    <div id="linkOut"></div>
+  </div>
+</main>
+<script src="../../assets/core.js"></script>
+<script src="../../assets/ai.js"></script>
+<script src="./lib.js"></script>
+<script src="./sample.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Small Business Admin — Brahaspati</title>
+  <meta name="description" content="Free quotes, invoices, customers, payment reminders and expenses for Australian sole traders and small businesses, with GST, printable documents and monthly reports. Data stays in your browser.">
+  <link rel="stylesheet" href="../../assets/style.css">
+  <style>
+    .form-grid { display: grid; gap: 0 14px; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+    .form-grid .full { grid-column: 1 / -1; }
+    .line { display: grid; gap: 8px; grid-template-columns: 1fr 80px 110px 110px auto; align-items: center; margin: 6px 0; }
+    .line .amt { text-align: right; font-variant-numeric: tabular-nums; }
+    @media (max-width: 640px) {
+      .line { grid-template-columns: 1fr 1fr 1fr auto; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+      .line .desc { grid-column: 1 / -1; }
+    }
+    .line-head { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+    @media (max-width: 640px) { .line-head { display: none; } }
+    .totals { margin-left: auto; max-width: 300px; }
+    .totals div { display: flex; justify-content: space-between; padding: 2px 0; }
+    .totals .grand { font-weight: 700; font-size: 18px; border-top: 2px solid var(--ink); margin-top: 4px; padding-top: 6px; }
+    .check { display: flex; gap: 6px; align-items: center; font-weight: 400; }
+    td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .actions select { width: auto; padding: 4px 6px; font-size: 13px; }
+    .pill-mute { font-size: 12px; padding: 1px 8px; border-radius: 99px; font-weight: 600; background: var(--soft); color: var(--muted); }
+    .dual { display: grid; grid-template-columns: 64px 1fr; gap: 4px 8px; align-items: center; font-size: 13px; }
+    .dual .bars2 div { height: 8px; border-radius: 4px; margin: 2px 0; }
+    .dual .inc { background: var(--ok); } .dual .exp { background: var(--warn); }
+    .legend span { display: inline-flex; align-items: center; gap: 4px; margin-right: 14px; font-size: 13px; }
+    .legend i { width: 12px; height: 8px; border-radius: 3px; display: inline-block; }
+    .logo-prev { max-height: 60px; max-width: 200px; display: block; margin: 6px 0; }
+    .reminder-card h3 { margin: 0 0 4px; }
+  </style>
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <p class="eyebrow">Business · admin</p>
+    <h1>Small Business Admin</h1>
+    <p class="lead">Quotes, invoices, customers, payment reminders and expenses in one place. Print or save documents as PDF, chase late payers politely and see where the money is going.</p>
+    <div class="row no-print">
+      <button class="btn primary" id="sample" type="button">Load sample data</button>
+      <button class="btn" id="newInvoiceTop" type="button">New invoice</button>
+      <button class="btn" id="newQuoteTop" type="button">New quote</button>
+    </div>
+    <p class="privacy">Everything is saved in this browser only. Use Settings → Download backup now and then, and before clearing your browser.</p>
+  </section>
+
+  <div class="tabs" data-tabs="biz">
+    <button data-tab="overview">Overview</button>
+    <button data-tab="docs">Quotes &amp; invoices</button>
+    <button data-tab="customers">Customers</button>
+    <button data-tab="reminders">Reminders</button>
+    <button data-tab="expenses">Expenses</button>
+    <button data-tab="reports">Reports</button>
+    <button data-tab="settings">Settings</button>
+  </div>
+
+  <section class="tab-panel" data-panel="overview"><div id="overview"></div></section>
+
+  <section class="tab-panel" data-panel="docs">
+    <div id="editor" class="panel" hidden></div>
+    <div class="row" style="margin-top:14px">
+      <button class="btn primary" id="newInvoice" type="button">New invoice</button>
+      <button class="btn" id="newQuote" type="button">New quote</button>
+      <select id="docFilter" aria-label="Show" style="width:auto">
+        <option value="all">All documents</option><option value="invoice">Invoices</option><option value="quote">Quotes</option>
+        <option value="unpaid">Unpaid invoices</option><option value="overdue">Overdue invoices</option><option value="draft">Drafts</option>
+      </select>
+      <input type="search" id="docSearch" placeholder="Search number or customer" aria-label="Search documents" style="max-width:240px">
+    </div>
+    <div id="docList" style="margin-top:12px"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="customers">
+    <div class="panel">
+      <h3 style="margin-top:0" id="custTitle">Add a customer</h3>
+      <form id="custForm" class="form-grid">
+        <div><label for="c-name">Business or person name *</label><input type="text" id="c-name" required></div>
+        <div><label for="c-contact">Contact person</label><input type="text" id="c-contact"></div>
+        <div><label for="c-email">Email</label><input type="email" id="c-email"></div>
+        <div><label for="c-phone">Phone</label><input type="text" id="c-phone"></div>
+        <div class="full"><label for="c-address">Address</label><textarea id="c-address" class="prose" style="min-height:60px"></textarea></div>
+        <div class="full"><label for="c-notes">Notes</label><input type="text" id="c-notes"></div>
+        <div class="full row" style="margin-top:10px"><button class="btn primary" type="submit">Save customer</button><button class="btn" type="button" id="custCancel" hidden>Cancel</button></div>
+      </form>
+    </div>
+    <div id="custList"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="reminders">
+    <p class="muted">Invoices that are overdue or due soon. Each reminder gets firmer: a friendly nudge (1–14 days late), a second reminder (15–30 days) and a final notice (over 30 days). You can always pick a gentler level.</p>
+    <div class="row"><label for="soonDays" style="margin:0">Show invoices due within</label><input type="number" id="soonDays" min="0" value="7" style="width:80px"><span class="muted">days</span></div>
+    <div id="remList"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="expenses">
+    <div class="panel">
+      <h3 style="margin-top:0" id="expTitle">Add an expense</h3>
+      <form id="expForm" class="form-grid">
+        <div><label for="x-date">Date</label><input type="date" id="x-date" required></div>
+        <div><label for="x-supplier">Supplier</label><input type="text" id="x-supplier" required></div>
+        <div><label for="x-category">Category</label><select id="x-category"></select></div>
+        <div><label for="x-amount">Amount paid (incl. GST)</label><input type="number" id="x-amount" step="0.01" min="0" required></div>
+        <div><label for="x-gst">GST in that amount</label><input type="number" id="x-gst" step="0.01" min="0"></div>
+        <div><label class="check" style="margin-top:34px"><input type="checkbox" id="x-hasgst" checked> Price includes GST</label></div>
+        <div class="full"><label for="x-note">Receipt note (where the receipt is kept, what it was for)</label><input type="text" id="x-note"></div>
+        <div class="full row" style="margin-top:10px"><button class="btn primary" type="submit">Save expense</button><button class="btn" type="button" id="expCancel" hidden>Cancel</button></div>
+      </form>
+    </div>
+    <div class="row"><button class="btn small" id="expCsv" type="button">Download expenses (CSV)</button></div>
+    <div id="expList" style="margin-top:10px"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="reports">
+    <div id="reports"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="settings">
+    <div class="panel">
+      <h3 style="margin-top:0">Your business details (shown on quotes and invoices)</h3>
+      <form id="setForm" class="form-grid">
+        <div><label for="s-name">Business name</label><input type="text" id="s-name"></div>
+        <div><label for="s-contactName">Your name (for email sign-off)</label><input type="text" id="s-contactName"></div>
+        <div><label for="s-abn">ABN</label><input type="text" id="s-abn" inputmode="numeric"></div>
+        <div><label for="s-email">Email</label><input type="email" id="s-email"></div>
+        <div><label for="s-phone">Phone</label><input type="text" id="s-phone"></div>
+        <div class="full"><label for="s-address">Address</label><textarea id="s-address" class="prose" style="min-height:60px"></textarea></div>
+        <div class="full"><label for="s-payDetails">How customers pay you (bank details, PayID)</label><textarea id="s-payDetails" class="prose" style="min-height:60px"></textarea></div>
+        <div class="full"><label for="s-quoteTerms">Terms printed on quotes</label><textarea id="s-quoteTerms" class="prose" style="min-height:50px"></textarea></div>
+        <div><label for="s-termsDays">Invoice due after (days)</label><input type="number" id="s-termsDays" min="0"></div>
+        <div><label for="s-quoteDays">Quotes valid for (days)</label><input type="number" id="s-quoteDays" min="0"></div>
+        <div><label for="s-invoicePrefix">Invoice number prefix</label><input type="text" id="s-invoicePrefix"></div>
+        <div><label for="s-quotePrefix">Quote number prefix</label><input type="text" id="s-quotePrefix"></div>
+        <div><label class="check" style="margin-top:34px"><input type="checkbox" id="s-gstRegistered"> Registered for GST (add 10% by default)</label></div>
+        <div class="full"><label for="logoFile">Logo (PNG or JPG, shrunk to fit)</label><input type="file" id="logoFile" accept="image/*"><div id="logoPrev"></div></div>
+        <div class="full row" style="margin-top:10px"><button class="btn primary" type="submit">Save settings</button></div>
+      </form>
+    </div>
+    <div class="panel">
+      <h3 style="margin-top:0">Backup</h3>
+      <p class="small muted">Your records live only in this browser. Download a backup file regularly and keep it somewhere safe. Restoring replaces what is here now.</p>
+      <div class="row">
+        <button class="btn" id="backup" type="button">Download backup (JSON)</button>
+        <button class="btn" id="restore" type="button">Restore from backup</button>
+        <button class="btn" id="custCsv" type="button">Customers (CSV)</button>
+        <button class="btn" id="wipe" type="button">Delete all data</button>
+      </div>
+    </div>
+  </section>
+
+  <dialog id="payDialog">
+    <form method="dialog" id="payForm">
+      <h3 style="margin-top:0">Record a payment</h3>
+      <p class="small muted" id="payInfo"></p>
+      <label for="payAmount">Amount received</label><input type="number" id="payAmount" step="0.01" min="0.01" required>
+      <label for="payDate">Date received</label><input type="date" id="payDate" required>
+      <div class="row" style="margin-top:14px"><button class="btn primary" value="ok">Save payment</button><button class="btn" value="cancel" formnovalidate>Cancel</button></div>
+    </form>
+  </dialog>
+</main>
+<script src="../../assets/core.js"></script>
+<script src="../../assets/ai.js"></script>
+<script src="./lib.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

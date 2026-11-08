@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Automation Hub — Brahaspati</title>
+<meta name="description" content="Bulk-rename files with live preview, sort a folder by type and date, find duplicate files and run CSV clean-up recipes — on your own computer, in your browser. Plus ready-made scripts for scheduled jobs.">
+<link rel="stylesheet" href="../../assets/style.css">
+<style>
+  .ah-opts { display: grid; gap: 4px 14px; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); align-items: end; }
+  .ah-opts label { margin: 6px 0 2px; }
+  .ah-check { display: inline-flex; gap: 6px; align-items: center; font-weight: 400; margin: 4px 0; }
+  .ah-check input { width: auto; }
+  .ah-sub { border-top: 1px solid var(--line); margin-top: 12px; padding-top: 8px; }
+  .ah-new { font-weight: 600; overflow-wrap: anywhere; }
+  .ah-old { overflow-wrap: anywhere; }
+  .ah-steps { list-style: none; padding: 0; margin: 8px 0; }
+  .ah-steps li { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 6px 0; border-bottom: 1px solid var(--line); }
+  .ah-steps li span { flex: 1; min-width: 160px; overflow-wrap: anywhere; }
+  .ah-group { border: 1px solid var(--line); border-radius: 8px; padding: 10px; margin: 10px 0; }
+  .ah-group label { font-weight: 400; display: flex; gap: 8px; align-items: flex-start; margin: 4px 0; overflow-wrap: anywhere; }
+  .ah-group input { width: auto; margin-top: 4px; flex: none; }
+  .ah-mode { border-left: 4px solid var(--accent); }
+  .ah-ro { border-left-color: var(--warn); }
+  pre.ah-code { white-space: pre; max-height: 360px; }
+  .ah-folder { font-weight: 600; overflow-wrap: anywhere; }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <p class="eyebrow">Personal · Automate the boring bits</p>
+    <h1>Automation Hub</h1>
+    <p class="lead">Rename hundreds of files at once, sort a messy Downloads folder into neat sub-folders, find duplicate files eating your disk, and clean up CSV files with saved recipes.</p>
+  </section>
+
+  <div class="panel ah-mode" id="ah-mode-box">
+    <div class="row">
+      <button class="btn primary" type="button" id="ah-pick">Choose a folder…</button>
+      <button class="btn" type="button" id="ah-sample">Try with a sample folder</button>
+      <input type="file" id="ah-dir-input" webkitdirectory multiple hidden>
+      <span class="ah-folder" id="ah-folder"></span>
+    </div>
+    <p class="small" id="ah-mode" style="margin-bottom:0"></p>
+  </div>
+
+  <div class="tabs" data-tabs="ah">
+    <button data-tab="rename">Bulk rename</button>
+    <button data-tab="organise">Organise folder</button>
+    <button data-tab="dupes">Duplicate finder</button>
+    <button data-tab="csv">CSV recipes</button>
+    <button data-tab="schedule">Scheduled jobs</button>
+  </div>
+
+  <!-- RENAME -->
+  <section class="tab-panel" data-panel="rename">
+    <div class="panel">
+      <p class="small muted" style="margin-top:0">Renames the files directly inside the chosen folder (not sub-folders). Nothing changes until you press Apply.</p>
+      <div class="ah-opts">
+        <div><label for="rn-find">Find</label><input type="text" id="rn-find" placeholder="e.g. IMG_"></div>
+        <div><label for="rn-replace">Replace with</label><input type="text" id="rn-replace" placeholder="leave empty to delete"></div>
+        <div><label for="rn-prefix">Add at start</label><input type="text" id="rn-prefix"></div>
+        <div><label for="rn-suffix">Add at end (before extension)</label><input type="text" id="rn-suffix"></div>
+        <div><label for="rn-case">Letter case</label><select id="rn-case"><option value="">Keep as is</option><option value="lower">lower case</option><option value="upper">UPPER CASE</option><option value="title">Title Case</option><option value="sentence">Sentence case</option><option value="kebab">kebab-case</option><option value="snake">snake_case</option></select></div>
+        <div><label for="rn-ext">New extension</label><input type="text" id="rn-ext" placeholder="e.g. jpg (empty = keep)"></div>
+      </div>
+      <div class="row">
+        <label class="ah-check"><input type="checkbox" id="rn-regex"> Find is a pattern (regex)</label>
+        <label class="ah-check"><input type="checkbox" id="rn-cs"> Match case</label>
+        <label class="ah-check"><input type="checkbox" id="rn-spaces"> Tidy extra spaces</label>
+        <label class="ah-check"><input type="checkbox" id="rn-extlower"> Lower-case extension</label>
+      </div>
+      <div class="ah-sub">
+        <label class="ah-check"><input type="checkbox" id="rn-seq"> Add numbers</label>
+        <div class="ah-opts">
+          <div><label for="rn-seq-start">Start at</label><input type="number" id="rn-seq-start" value="1"></div>
+          <div><label for="rn-seq-pad">Digits</label><input type="number" id="rn-seq-pad" value="3" min="1" max="8"></div>
+          <div><label for="rn-seq-where">Where</label><select id="rn-seq-where"><option value="prefix">At the start</option><option value="suffix">At the end</option><option value="replace">Replace the whole name</option></select></div>
+          <div><label for="rn-sort">Number in order of</label><select id="rn-sort"><option value="name">Name (A–Z)</option><option value="date">Date modified (oldest first)</option><option value="size">Size (smallest first)</option></select></div>
+        </div>
+      </div>
+      <div class="ah-sub">
+        <label class="ah-check"><input type="checkbox" id="rn-date"> Add the date the file was last changed</label>
+        <div class="ah-opts">
+          <div><label for="rn-date-fmt">Format</label><select id="rn-date-fmt"><option>YYYY-MM-DD</option><option>YYYYMMDD</option><option>YYYY-MM</option><option>DD-MM-YYYY</option><option>YYYY-MM-DD_HHmm</option></select></div>
+          <div><label for="rn-date-where">Where</label><select id="rn-date-where"><option value="prefix">At the start</option><option value="suffix">At the end</option></select></div>
+        </div>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <button class="btn primary" type="button" id="rn-apply">Apply renames</button>
+        <button class="btn" type="button" id="rn-sh">Download macOS/Linux script</button>
+        <button class="btn" type="button" id="rn-ps">Download Windows script</button>
+        <button class="btn small" type="button" id="rn-reset">Reset rules</button>
+      </div>
+      <p class="small" id="rn-summary" aria-live="polite"></p>
+      <div id="rn-preview"></div>
+    </div>
+  </section>
+
+  <!-- ORGANISE -->
+  <section class="tab-panel" data-panel="organise" hidden>
+    <div class="panel">
+      <p class="small muted" style="margin-top:0">Moves the files directly inside the chosen folder into sub-folders. Files already in sub-folders are left alone.</p>
+      <div class="row">
+        <label class="ah-check"><input type="checkbox" id="og-type" checked> By type (Images, Documents, Video, Audio, Archives, Code, Other)</label>
+        <label class="ah-check"><input type="checkbox" id="og-date"> By year-month</label>
+        <label for="og-fmt" class="ah-check">Date folders <select id="og-fmt" style="width:auto"><option value="YYYY-MM">2026-01</option><option value="YYYY/MM">2026/01</option><option value="YYYY">2026</option></select></label>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <button class="btn primary" type="button" id="og-apply">Move files</button>
+        <button class="btn" type="button" id="og-sh">Download macOS/Linux script</button>
+        <button class="btn" type="button" id="og-ps">Download Windows script</button>
+      </div>
+      <p class="small" id="og-summary" aria-live="polite"></p>
+      <div id="og-folders"></div>
+      <div id="og-preview"></div>
+    </div>
+  </section>
+
+  <!-- DUPLICATES -->
+  <section class="tab-panel" data-panel="dupes" hidden>
+    <div class="panel">
+      <p class="small muted" style="margin-top:0">Checks the folder and all its sub-folders. Files are first grouped by size, then only same-size files are read and fingerprinted (SHA-256), so two files only count as duplicates if their contents are byte-for-byte identical. Names don’t matter.</p>
+      <div class="row">
+        <button class="btn primary" type="button" id="dp-scan">Find duplicates</button>
+        <span class="small muted" id="dp-status" aria-live="polite"></span>
+      </div>
+      <div id="dp-stats" class="stat-row" style="margin-top:12px"></div>
+      <div id="dp-groups"></div>
+      <div class="row" id="dp-actions" hidden>
+        <button class="btn primary" type="button" id="dp-delete">Delete ticked files</button>
+        <button class="btn" type="button" id="dp-sh">Download delete script (macOS/Linux)</button>
+        <button class="btn" type="button" id="dp-ps">Download delete script (Windows)</button>
+      </div>
+      <p class="small muted">The oldest copy in each group is left unticked (kept). Deleted files skip the Recycle Bin / Bin, so double-check first.</p>
+    </div>
+  </section>
+
+  <!-- CSV RECIPES -->
+  <section class="tab-panel" data-panel="csv" hidden>
+    <div class="panel">
+      <div class="drop" id="cv-drop"><strong>Drop a CSV or Excel file</strong> or click to choose</div>
+      <div class="row" style="margin-top:10px">
+        <button class="btn" type="button" id="cv-sample">Try with a sample CSV</button>
+        <span class="small" id="cv-file"></span>
+      </div>
+    </div>
+    <div class="cols-2">
+      <div class="panel">
+        <h3 style="margin-top:0">Recipe steps</h3>
+        <ol class="ah-steps" id="cv-steps"></ol>
+        <label for="cv-type">Add a step</label>
+        <select id="cv-type">
+          <option value="trim">Trim spaces &amp; drop empty rows</option>
+          <option value="dedupe">Remove duplicate rows</option>
+          <option value="filter">Keep only rows where…</option>
+          <option value="rename">Rename a column</option>
+          <option value="remove">Remove columns</option>
+          <option value="reorder">Move columns to the front</option>
+          <option value="split">Split a column</option>
+          <option value="merge">Merge columns</option>
+          <option value="case">Change letter case</option>
+          <option value="replace">Find &amp; replace</option>
+          <option value="sort">Sort rows</option>
+        </select>
+        <div id="cv-form"></div>
+        <datalist id="cv-cols"></datalist>
+        <div class="row" style="margin-top:8px"><button class="btn" type="button" id="cv-add">Add step</button></div>
+        <div class="ah-sub">
+          <label for="cv-name">Save this recipe as</label>
+          <div class="row"><input type="text" id="cv-name" placeholder="e.g. Monthly bank export" style="flex:1;min-width:160px"><button class="btn small" type="button" id="cv-save">Save</button></div>
+          <label for="cv-saved">Saved recipes</label>
+          <div class="row"><select id="cv-saved" style="flex:1;min-width:160px"></select><button class="btn small" type="button" id="cv-load">Load</button><button class="btn small" type="button" id="cv-del">Delete</button></div>
+          <p class="small muted">Recipes are saved in this browser, so next month you can drop in the new file and press Load.</p>
+        </div>
+      </div>
+      <div class="panel">
+        <h3 style="margin-top:0">Result</h3>
+        <p class="small" id="cv-info" aria-live="polite"></p>
+        <div class="row"><button class="btn primary" type="button" id="cv-dl">Download CSV</button></div>
+        <div id="cv-preview" style="margin-top:10px"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCHEDULE -->
+  <section class="tab-panel" data-panel="schedule" hidden>
+    <div class="panel">
+      <h2 style="margin-top:0">Can this run every day by itself?</h2>
+      <p>Not from a web page. Browsers only run a page while it is open, and they never let a website touch your folders without you clicking first. So there are two honest options, both free:</p>
+      <ol>
+        <li><strong>Your own computer</strong> runs a small script on a timer (cron on macOS/Linux, Task Scheduler on Windows). The script below is generated from your Organise settings and works on whatever files are in the folder at the time.</li>
+        <li><strong>GitHub Actions</strong> runs a script on GitHub’s computers on a timer. It can only work on files stored in a GitHub repository (for example CSV exports you commit), not on your own disk.</li>
+      </ol>
+      <div class="ah-opts">
+        <div><label for="sc-time">Run at (your time)</label><input type="text" id="sc-time" value="07:00" inputmode="numeric" pattern="\d{1,2}:\d{2}"></div>
+        <div><label for="sc-days">How often</label><select id="sc-days"><option value="daily">Every day</option><option value="weekdays">Weekdays</option><option value="weekly">Every Monday</option></select></div>
+        <div><label for="sc-folder">Folder to tidy (full path)</label><input type="text" id="sc-folder" value="~/Downloads"></div>
+        <div><label for="sc-script">Where you saved the script</label><input type="text" id="sc-script" value="~/organise.sh"></div>
+      </div>
+      <p class="small muted" id="sc-tz"></p>
+    </div>
+    <div class="panel">
+      <h3 style="margin-top:0">1. The script (from your Organise settings)</h3>
+      <div class="tabs" data-tabs="sc-os">
+        <button data-tab="sc-mac">macOS / Linux</button>
+        <button data-tab="sc-win">Windows</button>
+      </div>
+      <section class="tab-panel" data-panel="sc-mac">
+        <pre class="ah-code" id="sc-bash"></pre>
+        <div class="row"><button class="btn small" type="button" id="sc-bash-copy">Copy</button><button class="btn small" type="button" id="sc-bash-dl">Download organise.sh</button></div>
+        <h3>2. Run it on a timer</h3>
+        <p class="small">Open Terminal, type <code>crontab -e</code>, paste this line, save. (On macOS, give Terminal or <code>cron</code> “Full Disk Access” in System Settings → Privacy &amp; Security if it can’t see the folder.)</p>
+        <pre class="ah-code" id="sc-cron"></pre>
+        <div class="row"><button class="btn small" type="button" id="sc-cron-copy">Copy</button></div>
+      </section>
+      <section class="tab-panel" data-panel="sc-win" hidden>
+        <pre class="ah-code" id="sc-ps"></pre>
+        <div class="row"><button class="btn small" type="button" id="sc-ps-copy">Copy</button><button class="btn small" type="button" id="sc-ps-dl">Download organise.ps1</button></div>
+        <h3>2. Run it on a timer</h3>
+        <p class="small">Open Command Prompt and paste this once. Change the paths to where you saved the script and the folder to tidy.</p>
+        <pre class="ah-code" id="sc-win-cmd"></pre>
+        <div class="row"><button class="btn small" type="button" id="sc-win-copy">Copy</button></div>
+      </section>
+      <p class="small muted">Tip: run it once by hand with a preview first — <code>DRY_RUN=1 bash organise.sh ~/Downloads</code> or <code>-DryRun</code> on Windows.</p>
+    </div>
+    <div class="panel">
+      <h3 style="margin-top:0">Or: GitHub Actions (free, in the cloud)</h3>
+      <p class="small">Put the script in your repository as <code>scripts/organise.sh</code>, save this as <code>.github/workflows/daily-automation.yml</code>, and GitHub will run it on schedule and commit the result. GitHub may start scheduled runs a few minutes late.</p>
+      <pre class="ah-code" id="sc-yaml"></pre>
+      <div class="row"><button class="btn small" type="button" id="sc-yaml-copy">Copy</button><button class="btn small" type="button" id="sc-yaml-dl">Download .yml</button></div>
+    </div>
+  </section>
+
+  <p class="privacy">Your files stay on your device. The folder is read inside this browser tab; nothing is uploaded. Changes only happen when you press Apply, Move or Delete.</p>
+</main>
+<script src="../../assets/core.js"></script>
+<script src="./lib.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

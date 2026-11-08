@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Money Command Centre — Brahaspati</title>
+  <meta name="description" content="Import bank statement CSVs from CommBank, NAB, Westpac, ANZ or ING, auto-categorise spending, set budgets, spot subscriptions and track savings goals. Free and private.">
+  <link rel="stylesheet" href="../../assets/style.css">
+  <style>
+    .fin-progress { background: var(--soft); border-radius: 6px; height: 10px; overflow: hidden; }
+    .fin-progress > div { height: 100%; background: var(--ok); }
+    .fin-progress.close > div { background: var(--warn); }
+    .fin-progress.over > div { background: var(--bad); }
+    .fin-budget { display: grid; grid-template-columns: minmax(110px, 1fr) 2fr; gap: 6px 12px; align-items: center; margin: 10px 0; }
+    .fin-budget .meta { grid-column: 1 / -1; font-size: 13px; color: var(--muted); margin-top: -4px; }
+    .fin-amt-neg { color: var(--ink); }
+    .fin-amt-pos { color: var(--ok); font-weight: 600; }
+    td select { min-width: 140px; padding: 4px 6px; font-size: 13px; }
+    td.num, th.num { text-align: right; white-space: nowrap; }
+    .fin-map { display: grid; gap: 8px 12px; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+    .fin-map label { margin: 0 0 2px; }
+    .fin-goal h3 { margin: 0 0 4px; }
+    .fin-filters { display: grid; gap: 8px; grid-template-columns: 2fr 1fr 1fr; }
+    @media (max-width: 600px) { .fin-filters { grid-template-columns: 1fr; } }
+    input.inline-num { width: 110px; }
+  </style>
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <p class="eyebrow">Personal · Money</p>
+    <h1>Money Command Centre</h1>
+    <p class="lead">Drop in your bank statement CSVs to see where your money goes each month. Spending is sorted into categories for you, budgets show how you’re tracking, and recurring charges you may have forgotten about are flagged.</p>
+    <div class="row">
+      <button class="btn primary" type="button" id="goImport">Import a statement</button>
+      <button class="btn" type="button" id="sample">Load sample data</button>
+    </div>
+    <p class="privacy">Your statements and transactions stay in this browser. Nothing is uploaded.</p>
+  </section>
+
+  <div class="tabs" data-tabs="fin">
+    <button data-tab="overview">Overview</button>
+    <button data-tab="tx">Transactions</button>
+    <button data-tab="import">Import</button>
+    <button data-tab="budgets">Budgets</button>
+    <button data-tab="subs">Subscriptions</button>
+    <button data-tab="goals">Goals</button>
+    <button data-tab="rules">Rules</button>
+    <button data-tab="data">Backup</button>
+  </div>
+
+  <section class="tab-panel" data-panel="overview">
+    <div class="row" style="margin-top:14px">
+      <label for="ovMonth" style="margin:0">Month</label>
+      <select id="ovMonth" style="width:auto"></select>
+    </div>
+    <div id="ovEmpty" class="panel" hidden>
+      <p>No transactions yet. Import a bank statement or load the sample data to see your dashboard.</p>
+    </div>
+    <div id="ovBody">
+      <div class="stat-row" id="ovStats" style="margin-top:14px"></div>
+      <div class="cols-2">
+        <div class="panel"><h2 style="margin-top:0">Spending by category</h2><div id="ovCats"></div></div>
+        <div class="panel"><h2 style="margin-top:0">Budgets this month</h2><div id="ovBudgets"></div></div>
+      </div>
+      <div class="panel">
+        <h2 style="margin-top:0">Month by month</h2>
+        <p class="small muted">Transfers between your own accounts are left out. Money moved to savings counts as saved, not spent.</p>
+        <div id="ovMonths"></div>
+      </div>
+      <div class="panel">
+        <h2 style="margin-top:0">Category spending over months</h2>
+        <div id="ovCatMonths"></div>
+      </div>
+      <div class="panel" id="ovAi">
+        <h2 style="margin-top:0">Quick take</h2>
+        <ul id="ovTips"></ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="tab-panel" data-panel="tx">
+    <div class="panel">
+      <div class="fin-filters">
+        <div><label for="txSearch">Search</label><input id="txSearch" type="search" placeholder="e.g. woolworths"></div>
+        <div><label for="txMonth">Month</label><select id="txMonth"></select></div>
+        <div><label for="txCat">Category</label><select id="txCat"></select></div>
+      </div>
+      <p class="small muted" id="txCount"></p>
+      <p class="small muted">Change a category and the app remembers that merchant for next time.</p>
+      <div id="txTable"></div>
+    </div>
+    <details class="panel">
+      <summary><strong>Add a transaction by hand</strong></summary>
+      <form id="addForm" class="fin-map" style="margin-top:10px">
+        <div><label for="aDate">Date</label><input id="aDate" type="date" required></div>
+        <div><label for="aDesc">Description</label><input id="aDesc" type="text" required placeholder="e.g. Cash for markets"></div>
+        <div><label for="aAmt">Amount (AUD)</label><input id="aAmt" type="number" step="0.01" min="0" required></div>
+        <div><label for="aType">Type</label><select id="aType"><option value="out">Money out</option><option value="in">Money in</option></select></div>
+        <div><label for="aCat">Category</label><select id="aCat"></select></div>
+        <div style="align-self:end"><button class="btn primary" type="submit">Add</button></div>
+      </form>
+    </details>
+  </section>
+
+  <section class="tab-panel" data-panel="import">
+    <div class="panel">
+      <h2 style="margin-top:0">Import a bank statement</h2>
+      <p>In your bank’s website or app, export transactions as <strong>CSV</strong> (Excel files work too). CommBank, NAB, Westpac, ANZ, ING, Macquarie, Up and most others are recognised automatically. Importing the same statement twice won’t double up.</p>
+      <div class="drop" id="drop">Drop CSV or Excel files here, or click to choose</div>
+      <details style="margin-top:10px"><summary>Or paste CSV text</summary>
+        <textarea id="paste" placeholder="08/11/2026,-12.50,&quot;WOOLWORTHS 1234 SYDNEY&quot;,+1530.20"></textarea>
+        <button class="btn" type="button" id="pasteGo">Read pasted text</button>
+      </details>
+    </div>
+    <div class="panel" id="mapPanel" hidden>
+      <h2 style="margin-top:0">Check the columns</h2>
+      <p id="mapMsg"></p>
+      <div class="fin-map" id="mapSelects"></div>
+      <div class="row" style="margin-top:10px">
+        <label style="margin:0;font-weight:400"><input type="checkbox" id="mapHeader"> First row is a header</label>
+        <label style="margin:0;font-weight:400"><input type="checkbox" id="mapFlip"> Flip signs (spending shows as positive in this file)</label>
+      </div>
+      <label for="mapAccount">Account name (optional)</label>
+      <input id="mapAccount" type="text" placeholder="e.g. Everyday account" style="max-width:320px">
+      <h3>Preview</h3>
+      <div id="mapPreview"></div>
+      <div class="row" style="margin-top:10px">
+        <button class="btn primary" type="button" id="mapImport">Import</button>
+        <button class="btn" type="button" id="mapCancel">Cancel</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="tab-panel" data-panel="budgets">
+    <div class="panel">
+      <div class="row"><label for="bMonth" style="margin:0">Month</label><select id="bMonth" style="width:auto"></select>
+        <button class="btn" type="button" id="bSuggest">Suggest from last 3 months</button></div>
+      <div id="bProgress"></div>
+    </div>
+    <div class="panel">
+      <h2 style="margin-top:0">Monthly budget per category</h2>
+      <p class="small muted">Leave blank for no budget. Amounts are per month in AUD.</p>
+      <div id="bInputs" class="fin-map"></div>
+      <div class="row" style="margin-top:10px"><button class="btn primary" type="button" id="bSave">Save budgets</button></div>
+    </div>
+  </section>
+
+  <section class="tab-panel" data-panel="subs">
+    <div class="panel">
+      <h2 style="margin-top:0">Recurring charges and subscriptions</h2>
+      <p class="small muted">Found from charges to the same merchant for about the same amount on a regular cycle (weekly, fortnightly, monthly, quarterly or yearly). Needs a couple of months of history to work well.</p>
+      <div class="stat-row" id="subStats"></div>
+      <div id="subTable" style="margin-top:12px"></div>
+      <p class="small"><button class="btn small" type="button" id="subShowHidden">Show hidden</button></p>
+    </div>
+  </section>
+
+  <section class="tab-panel" data-panel="goals">
+    <div class="panel">
+      <h2 style="margin-top:0">Savings goals</h2>
+      <form id="goalForm" class="fin-map">
+        <div><label for="gName">Goal</label><input id="gName" type="text" required placeholder="e.g. Emergency fund"></div>
+        <div><label for="gTarget">Target (AUD)</label><input id="gTarget" type="number" min="1" step="1" required></div>
+        <div><label for="gSaved">Saved so far</label><input id="gSaved" type="number" min="0" step="1" value="0"></div>
+        <div><label for="gDate">By</label><input id="gDate" type="date"></div>
+        <div style="align-self:end"><button class="btn primary" type="submit">Add goal</button></div>
+      </form>
+      <p class="small muted" id="gAvg"></p>
+    </div>
+    <div id="goalList" class="grid"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="rules">
+    <div class="panel">
+      <h2 style="margin-top:0">Category rules</h2>
+      <p class="small muted">If a transaction description contains the keyword, it gets that category. Rules learned from your changes win; otherwise the longest matching keyword wins.</p>
+      <form id="ruleForm" class="fin-map">
+        <div><label for="rKw">Keyword</label><input id="rKw" type="text" required placeholder="e.g. harris farm"></div>
+        <div><label for="rCat">Category</label><select id="rCat"></select></div>
+        <div style="align-self:end"><button class="btn primary" type="submit">Add rule</button></div>
+      </form>
+      <div class="row" style="margin-top:10px">
+        <button class="btn" type="button" id="rApply">Re-apply rules to all transactions</button>
+        <button class="btn" type="button" id="rReset">Reset to default rules</button>
+      </div>
+      <div style="margin-top:10px"><input id="rSearch" type="search" placeholder="Filter rules"></div>
+      <div id="ruleTable" style="margin-top:10px"></div>
+    </div>
+  </section>
+
+  <section class="tab-panel" data-panel="data">
+    <div class="panel">
+      <h2 style="margin-top:0">Backup and restore</h2>
+      <p>Everything lives in this browser only. Download a backup now and then, especially before clearing browser data or switching computers.</p>
+      <div class="row">
+        <button class="btn primary" type="button" id="exportJson">Download backup (JSON)</button>
+        <button class="btn" type="button" id="importJson">Restore from backup</button>
+        <button class="btn" type="button" id="exportCsv">Download transactions (CSV)</button>
+        <button class="btn" type="button" id="clearAll">Delete all data</button>
+      </div>
+      <p class="small muted" id="dataInfo"></p>
+    </div>
+  </section>
+</main>
+<script src="../../assets/core.js"></script>
+<script src="../../assets/ai.js"></script>
+<script src="./lib.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

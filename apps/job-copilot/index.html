@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Job Application Copilot — Brahaspati</title>
+  <meta name="description" content="Track job applications, match your resume to a job ad, find skill gaps across ads, prepare interview questions, log interview feedback and compare salary offers. Free and private.">
+  <link rel="stylesheet" href="../../assets/style.css">
+  <style>
+    .jc-board { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); margin-top: 12px; }
+    .jc-col { background: var(--soft); border-radius: var(--radius); padding: 10px; min-height: 80px; }
+    .jc-col h3 { margin: 0 0 8px; font-size: 14px; display: flex; justify-content: space-between; }
+    .jc-card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px; margin-bottom: 8px; font-size: 14px; }
+    .jc-card strong { display: block; }
+    .jc-card select { margin-top: 6px; padding: 4px 6px; font-size: 13px; }
+    .jc-next { font-size: 13px; margin-top: 4px; }
+    .jc-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+    .jc-chip { font-size: 13px; padding: 2px 10px; border-radius: 99px; border: 1px solid var(--line); background: var(--panel); }
+    .jc-chip.have { border-color: var(--ok); color: var(--ok); }
+    .jc-chip.miss { border-color: var(--bad); color: var(--bad); }
+    .jc-chip.req::after { content: " ★"; }
+    .jc-score { font-size: 44px; font-weight: 800; line-height: 1; }
+    .jc-form { display: grid; gap: 4px 12px; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+    .jc-form .wide { grid-column: 1 / -1; }
+    dialog { max-width: 720px; max-height: 90vh; overflow: auto; }
+    .jc-q { margin: 8px 0; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+    .jc-q .small { margin-top: 2px; }
+    .jc-q textarea { min-height: 70px; margin-top: 6px; font-family: var(--font); }
+    .jc-fb { border-left: 3px solid var(--brand); padding: 6px 10px; margin: 8px 0; }
+  </style>
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <p class="eyebrow">Personal · Career</p>
+    <h1>Job Application Copilot</h1>
+    <p class="lead">Keep every application in one place, see how well your resume fits a job ad, spot the skills employers keep asking for, and walk into interviews prepared.</p>
+    <div class="row">
+      <button class="btn primary" type="button" id="addApp">Add an application</button>
+      <button class="btn" type="button" id="sample">Load sample data</button>
+    </div>
+    <p class="privacy">Your applications, resume and notes stay in this browser. Nothing is uploaded.</p>
+  </section>
+
+  <div class="tabs" data-tabs="jc">
+    <button data-tab="tracker">Tracker</button>
+    <button data-tab="match">Resume match</button>
+    <button data-tab="gaps">Skill gaps</button>
+    <button data-tab="prep">Interview prep</button>
+    <button data-tab="feedback">Feedback log</button>
+    <button data-tab="salary">Salary</button>
+    <button data-tab="data">Backup</button>
+  </div>
+
+  <section class="tab-panel" data-panel="tracker">
+    <div class="stat-row" id="stats" style="margin-top:14px"></div>
+    <div id="alerts"></div>
+    <div class="row" style="margin-top:12px">
+      <div class="row" role="group" aria-label="View">
+        <button class="btn small" type="button" data-view="board">Board</button>
+        <button class="btn small" type="button" data-view="table">Table</button>
+      </div>
+      <input id="search" type="search" placeholder="Search company or role" style="max-width:260px">
+    </div>
+    <div id="board"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="match">
+    <div class="cols-2" style="margin-top:14px">
+      <div>
+        <label for="resume">Your resume (plain text)</label>
+        <textarea id="resume" class="prose" style="min-height:260px" placeholder="Paste your resume text here. It is saved in this browser for next time."></textarea>
+        <div class="drop small" id="resumeDrop" style="margin-top:6px;padding:10px">Or drop a .docx, .pdf or .txt resume here</div>
+      </div>
+      <div>
+        <label for="jd">Job description</label>
+        <select id="jdPick" aria-label="Use the job ad from a saved application"><option value="">Paste below, or pick a saved application…</option></select>
+        <textarea id="jd" class="prose" style="min-height:224px;margin-top:6px" placeholder="Paste the full job ad."></textarea>
+      </div>
+    </div>
+    <div class="row" style="margin-top:10px"><button class="btn primary" type="button" id="analyse">Check the match</button><button class="btn" type="button" id="saveJd">Save this ad to an application</button></div>
+    <div id="matchOut"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="gaps">
+    <div class="panel">
+      <h2 style="margin-top:0">Skills employers keep asking for</h2>
+      <p class="small muted">Built from the job ads saved in your applications, compared with the resume on the Resume match tab. Skills in red that appear in most ads are the best ones to learn or to add to your resume if you already have them.</p>
+      <div id="gapOut"></div>
+    </div>
+  </section>
+
+  <section class="tab-panel" data-panel="prep">
+    <div class="panel">
+      <label for="prepPick">Prepare for</label>
+      <select id="prepPick"></select>
+      <details style="margin-top:8px"><summary>Or paste a job ad</summary><textarea id="prepJd" class="prose"></textarea></details>
+      <div class="row" style="margin-top:10px"><button class="btn primary" type="button" id="prepGo">Make my question list</button><button class="btn" type="button" id="prepCopy">Copy as text</button><button class="btn" type="button" id="prepPrint">Print</button></div>
+    </div>
+    <div id="prepOut"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="feedback">
+    <div class="panel">
+      <h2 style="margin-top:0">Log an interview</h2>
+      <form id="fbForm" class="jc-form">
+        <div><label for="fbApp">Application</label><select id="fbApp" required></select></div>
+        <div><label for="fbDate">Date</label><input id="fbDate" type="date" required></div>
+        <div><label for="fbRound">Round</label><select id="fbRound"><option>Recruiter call</option><option>Phone screen</option><option>Technical</option><option>Take-home task</option><option>Panel</option><option>Hiring manager</option><option>Final</option><option>Other</option></select></div>
+        <div><label for="fbWho">Interviewer(s)</label><input id="fbWho" type="text"></div>
+        <div class="wide"><label for="fbAsked">Questions they asked</label><textarea id="fbAsked" class="prose" style="min-height:80px"></textarea></div>
+        <div><label for="fbWell">What went well</label><textarea id="fbWell" class="prose" style="min-height:70px"></textarea></div>
+        <div><label for="fbBetter">What to do better</label><textarea id="fbBetter" class="prose" style="min-height:70px"></textarea></div>
+        <div><label for="fbRating">How it felt (1–5)</label><input id="fbRating" type="number" min="1" max="5" value="3"></div>
+        <div><label for="fbFollow">Follow-up</label><input id="fbFollow" type="text" placeholder="e.g. send thank-you email"></div>
+        <div class="wide"><button class="btn primary" type="submit">Save interview notes</button></div>
+      </form>
+    </div>
+    <div id="fbList"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="salary">
+    <div class="panel">
+      <h2 style="margin-top:0">Compare expected and offered salary</h2>
+      <p class="small muted">Australian employers usually quote either “base + super” or a “package including super”. Super is worked out at <span id="superPct"></span>. Take-home pay is a rough estimate using 2026–27 resident tax rates and the 2% Medicare levy; it ignores HELP debt, salary sacrifice and other offsets.</p>
+      <div class="jc-form">
+        <div><label for="sApp">Application (optional)</label><select id="sApp"></select></div>
+        <div><label for="sExp">Your expected salary</label><input id="sExp" type="number" step="1000" min="0" placeholder="e.g. 140000"></div>
+        <div><label for="sExpSuper">Expected is</label><select id="sExpSuper"><option value="0">Base (plus super)</option><option value="1">Package (includes super)</option></select></div>
+        <div><label for="sOff">Offer</label><input id="sOff" type="number" step="1000" min="0" placeholder="e.g. 150000"></div>
+        <div><label for="sOffSuper">Offer is</label><select id="sOffSuper"><option value="0">Base (plus super)</option><option value="1">Package (includes super)</option></select></div>
+        <div style="align-self:end"><button class="btn primary" type="button" id="sSave">Compare and save</button></div>
+      </div>
+      <div id="sOut"></div>
+    </div>
+    <div class="panel"><h2 style="margin-top:0">All applications</h2><div id="sTable"></div></div>
+  </section>
+
+  <section class="tab-panel" data-panel="data">
+    <div class="panel">
+      <h2 style="margin-top:0">Backup and restore</h2>
+      <p>Everything lives in this browser only. Download a backup now and then.</p>
+      <div class="row">
+        <button class="btn primary" type="button" id="exportJson">Download backup (JSON)</button>
+        <button class="btn" type="button" id="importJson">Restore from backup</button>
+        <button class="btn" type="button" id="exportCsv">Download applications (CSV)</button>
+        <button class="btn" type="button" id="clearAll">Delete all data</button>
+      </div>
+    </div>
+  </section>
+
+  <dialog id="dlg">
+    <form id="appForm" method="dialog">
+      <h2 style="margin-top:0" id="dlgTitle">Application</h2>
+      <div class="jc-form">
+        <div><label for="fCompany">Company</label><input id="fCompany" type="text" required></div>
+        <div><label for="fRole">Role</label><input id="fRole" type="text" required></div>
+        <div><label for="fStatus">Status</label><select id="fStatus"></select></div>
+        <div><label for="fApplied">Date applied</label><input id="fApplied" type="date"></div>
+        <div class="wide"><label for="fLink">Link to ad</label><input id="fLink" type="url" placeholder="https://"></div>
+        <div><label for="fSalary">Advertised salary</label><input id="fSalary" type="text" placeholder="e.g. 120–140k + super"></div>
+        <div><label for="fSource">Found via</label><input id="fSource" type="text" placeholder="e.g. Seek, LinkedIn, referral"></div>
+        <div class="wide"><label for="fNext">Next action</label><input id="fNext" type="text" placeholder="e.g. Follow up with recruiter"></div>
+        <div><label for="fNextDate">Next action date</label><input id="fNextDate" type="date"></div>
+        <div><label for="fContact">Contact</label><input id="fContact" type="text" placeholder="Name, email or phone"></div>
+        <div class="wide"><label for="fNotes">Notes</label><textarea id="fNotes" class="prose" style="min-height:70px"></textarea></div>
+        <div class="wide"><label for="fJd">Job ad text (used for matching, skill gaps and interview prep)</label><textarea id="fJd" class="prose" style="min-height:100px"></textarea></div>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <button class="btn primary" type="submit" value="save">Save</button>
+        <button class="btn" type="button" id="dlgCancel">Cancel</button>
+        <button class="btn" type="button" id="dlgDelete" style="margin-left:auto">Delete</button>
+      </div>
+    </form>
+  </dialog>
+</main>
+<script src="../../assets/core.js"></script>
+<script src="../../assets/ai.js"></script>
+<script src="./lib.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Website Change Monitor — Brahaspati</title>
+  <meta name="description" content="Set up a free website change monitor on GitHub Actions: it screenshots your pages on a schedule, compares pixels and text, and opens a GitHub issue when something changes. Plus an in-browser screenshot compare tool.">
+  <link rel="stylesheet" href="../../assets/style.css">
+  <style>
+    .page-row { display: grid; grid-template-columns: 1fr 1.6fr 1fr auto; gap: 8px; align-items: end; padding: 8px 0; border-bottom: 1px solid var(--line); }
+    .page-row label { margin: 0 0 2px; font-size: 12px; font-weight: 600; color: var(--muted); }
+    @media (max-width: 760px) { .page-row { grid-template-columns: 1fr; } }
+    .settings { display: grid; gap: 0 14px; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
+    .file pre { max-height: 360px; white-space: pre; }
+    .file .path { font-family: var(--mono); font-size: 14px; font-weight: 700; overflow-wrap: anywhere; }
+    .steps li { margin: 8px 0; }
+    .steps code, .note code { background: var(--code); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+    .cmp-grid { display: grid; gap: 12px; grid-template-columns: 1fr 1fr; }
+    @media (max-width: 760px) { .cmp-grid { grid-template-columns: 1fr; } }
+    .cmp-grid .drop { padding: 14px; min-height: 90px; }
+    .cmp-grid img { max-height: 160px; display: block; margin: 8px auto 0; }
+    canvas#cmpCanvas { display: block; margin-top: 10px; border: 1px solid var(--line); border-radius: 8px; background: #fff; height: auto; }
+    .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; flex-wrap: wrap; }
+    .seg button { border: 0; background: var(--panel); color: var(--ink); padding: 6px 12px; font: inherit; font-size: 14px; cursor: pointer; }
+    .seg button[aria-pressed="true"] { background: var(--brand); color: var(--brand-ink); }
+  </style>
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <p class="eyebrow">Utilities</p>
+    <h1>Website Change Monitor</h1>
+    <p class="lead">Get told when a web page changes — a competitor’s prices, a supplier’s terms, a government form, or your own site breaking. It runs free on GitHub, takes a screenshot on a schedule, compares it with last time and opens an issue (which emails you) when something changes.</p>
+  </section>
+
+  <div class="panel note">
+    <h2 style="margin-top:0">Why GitHub, and not this page?</h2>
+    <p>A web page can’t keep watching other websites once you close the tab, and this site has no server. So this page writes three small files for you, and <strong>GitHub Actions</strong> (free) runs them on GitHub’s computers on your schedule. You need a free GitHub account; no coding, no credit card.</p>
+    <ul class="small">
+      <li><strong>Cost:</strong> free. Public repositories get unlimited Actions minutes; private ones get 2,000 free minutes a month, and each check takes about 1–2 minutes.</li>
+      <li><strong>Privacy:</strong> screenshots are saved in the repository. Make it <strong>private</strong> unless you don’t mind others seeing them.</li>
+      <li><strong>Honest limits:</strong> scheduled runs can start 5–30 minutes late at busy times. In a public repository with no activity for 60 days GitHub pauses the schedule and emails you — click “Enable workflow” to restart. Pages behind a login, CAPTCHA or bot-blocking may not load.</li>
+    </ul>
+  </div>
+
+  <div class="panel">
+    <h2 style="margin-top:0">1. What should it watch?</h2>
+    <div id="pages"></div>
+    <div class="row" style="margin-top:10px"><button class="btn small" id="addPage" type="button">+ Add a page</button><button class="btn small" id="sample" type="button">Try with sample</button></div>
+    <h3>Settings</h3>
+    <div class="settings">
+      <div><label for="schedule">How often</label><select id="schedule">
+        <option value="daily">Every day</option><option value="weekdays">Weekdays</option><option value="weekly">Once a week</option>
+        <option value="12h">Every 12 hours</option><option value="6h">Every 6 hours</option><option value="hourly">Every hour</option></select></div>
+      <div id="dayWrap"><label for="weekday">Day</label><select id="weekday"><option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4">Thursday</option><option value="5">Friday</option><option value="6">Saturday</option><option value="0">Sunday</option></select></div>
+      <div id="timeWrap"><label for="time">At (your time)</label><input id="time" type="time" value="09:17"></div>
+      <div><label for="viewport">Screen size</label><select id="viewport"></select></div>
+      <div><label for="threshold">Alert when pixels change by at least (%)</label><input id="threshold" type="number" min="0" max="100" step="0.1" value="1"></div>
+      <div><label for="wait">Wait after loading (ms)</label><input id="wait" type="number" min="0" max="30000" step="500" value="2000"></div>
+    </div>
+    <label style="font-weight:400"><input type="checkbox" id="fullPage" checked> Screenshot the whole page (not just the top screen)</label>
+    <label style="font-weight:400"><input type="checkbox" id="textAlert" checked> Also alert when the visible text changes (even if few pixels change)</label>
+    <p class="small muted" id="cronNote"></p>
+  </div>
+
+  <div class="panel">
+    <h2 style="margin-top:0">2. Your three files</h2>
+    <p class="small muted" style="margin-top:-4px">They update as you change the settings above. The folder names matter — keep them exactly as shown.</p>
+    <div class="tabs" data-tabs="files">
+      <button data-tab="wf">Workflow</button><button data-tab="js">monitor.js</button><button data-tab="json">urls.json</button>
+    </div>
+    <section class="tab-panel file" data-panel="wf"></section>
+    <section class="tab-panel file" data-panel="js"></section>
+    <section class="tab-panel file" data-panel="json"></section>
+    <div class="row" style="margin-top:12px"><button class="btn" id="dlAll" type="button">Download all three files</button></div>
+  </div>
+
+  <div class="panel">
+    <h2 style="margin-top:0">3. Set it up on GitHub (about 10 minutes)</h2>
+    <ol class="steps">
+      <li>Go to <a href="https://github.com/signup" target="_blank" rel="noopener">github.com</a> and sign in (or create a free account).</li>
+      <li>Click the <strong>+</strong> at the top right → <strong>New repository</strong>. Name it e.g. <code>page-monitor</code>, choose <strong>Private</strong>, tick <strong>Add a README file</strong>, then <strong>Create repository</strong>.</li>
+      <li>In your new repository click <strong>Add file → Create new file</strong>. In the name box type <code>.github/workflows/page-monitor.yml</code> (typing the <code>/</code> makes the folders). Copy the <em>Workflow</em> file above, paste it in, then click <strong>Commit changes…</strong> → <strong>Commit changes</strong>.</li>
+      <li>Again <strong>Add file → Create new file</strong>, name <code>monitor/monitor.js</code>, paste the <em>monitor.js</em> file, commit.</li>
+      <li>Once more: name <code>monitor/urls.json</code>, paste the <em>urls.json</em> file, commit.</li>
+      <li>Click the <strong>Settings</strong> tab → <strong>Actions → General</strong>. Under <strong>Workflow permissions</strong> choose <strong>Read and write permissions</strong> and <strong>Save</strong>. (This lets it save screenshots and open issues using GitHub’s built-in token — no passwords needed.)</li>
+      <li>Click the <strong>Actions</strong> tab. If asked, click <strong>I understand my workflows, go ahead and enable them</strong>. Choose <strong>Page monitor</strong> on the left → <strong>Run workflow</strong> → <strong>Run workflow</strong>.</li>
+      <li>The first run takes about 2 minutes and saves the starting screenshots in <code>monitor/data</code>. From then on it compares each run with the one before. When something changes you’ll get a new <strong>Issue</strong> with before/after/difference pictures.</li>
+      <li>To get emails: click <strong>Watch</strong> (top of the repository) → <strong>All Activity</strong>, or <strong>Custom → Issues</strong>. Check your GitHub email settings under your profile → <strong>Settings → Notifications</strong>.</li>
+    </ol>
+    <p class="small muted">To change pages later, edit <code>monitor/urls.json</code> on GitHub (pencil icon). To stop, go to Actions → Page monitor → ••• → <strong>Disable workflow</strong>. If a run fails, open it in the Actions tab — the red step shows what went wrong.</p>
+  </div>
+
+  <div class="panel">
+    <h2 style="margin-top:0">Compare two screenshots now</h2>
+    <p class="small muted" style="margin-top:-4px">Drop a “before” and an “after” image to see exactly what changed. This part runs right here in your browser.</p>
+    <div class="cmp-grid">
+      <div class="drop" id="dropA"><strong>Before</strong> — drop or click to pick<img id="imgA" alt="Before" hidden></div>
+      <div class="drop" id="dropB"><strong>After</strong> — drop or click to pick<img id="imgB" alt="After" hidden></div>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <button class="btn" id="cmpSample" type="button">Try with sample images</button>
+      <label for="sens" style="margin:0">Sensitivity</label><input id="sens" type="range" min="0" max="0.5" step="0.01" value="0.1" style="width:140px;accent-color:var(--brand)" aria-label="Colour difference threshold">
+    </div>
+    <div id="cmpResult" class="small" style="margin-top:10px"></div>
+    <div class="seg" id="view" hidden role="group" aria-label="Show"><button type="button" data-v="overlay" aria-pressed="true">Differences</button><button type="button" data-v="a" aria-pressed="false">Before</button><button type="button" data-v="b" aria-pressed="false">After</button></div>
+    <canvas id="cmpCanvas" hidden></canvas>
+    <div class="row" style="margin-top:8px"><button class="btn small" id="dlDiff" type="button" hidden>Download difference image</button></div>
+  </div>
+
+  <p class="privacy">This page doesn’t send your URLs anywhere — it only writes files for you to copy. The monitor then runs in your own GitHub account. Images you compare above stay in your browser. No AI is used.</p>
+</main>
+<script src="../../assets/core.js"></script>
+<script src="./lib.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

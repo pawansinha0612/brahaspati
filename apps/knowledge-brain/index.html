@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Knowledge Brain — Brahaspati</title>
+<meta name="description" content="Chat with your own documents privately. Add PDFs, Word, Excel and notes, search across them, ask questions with cited answers and get summaries — all in your browser.">
+<link rel="stylesheet" href="../../assets/style.css">
+<style>
+  .kb-doc { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .kb-doc:last-child { border-bottom: 0; }
+  .kb-doc .name { font-weight: 600; overflow-wrap: anywhere; }
+  .kb-hit { padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .kb-hit p { margin: 4px 0 0; overflow-wrap: anywhere; }
+  .kb-src { font-size: 13px; background: none; border: 0; padding: 0; color: var(--accent); cursor: pointer; text-decoration: underline; font: inherit; font-size: 13px; text-align: left; }
+  mark { background: color-mix(in srgb, var(--brand) 28%, transparent); color: inherit; border-radius: 3px; padding: 0 1px; }
+  .kb-answer p { margin: 6px 0; }
+  .kb-cite { font-size: 12px; vertical-align: super; color: var(--accent); }
+  .kb-facts dt { font-weight: 600; margin-top: 8px; }
+  .kb-facts dd { margin: 2px 0 0; overflow-wrap: anywhere; }
+  .kb-view { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 60vh; overflow: auto; font-size: 14px; }
+  .kb-warn { border-color: var(--warn); }
+  #kb-filter { max-width: 320px; }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <p class="eyebrow">Personal · Chat with your documents</p>
+    <h1>Knowledge Brain</h1>
+    <p class="lead">Drop in PDFs, Word files, spreadsheets and notes. Search across all of them, ask questions and get answers that point to the exact page — without uploading anything.</p>
+  </section>
+
+  <div id="kb-storage-warn" class="panel kb-warn" hidden></div>
+
+  <div class="tabs" data-tabs="kb">
+    <button data-tab="library">Library</button>
+    <button data-tab="search">Search</button>
+    <button data-tab="ask">Ask a question</button>
+    <button data-tab="backup">Backup</button>
+  </div>
+
+  <section class="tab-panel" data-panel="library">
+    <div class="cols-2">
+      <div class="panel">
+        <h2 style="margin-top:0">Add documents</h2>
+        <div class="drop" id="kb-drop"><strong>Drop files here</strong> or click to choose<br><span class="small">PDF, Word (.docx), Excel (.xlsx), CSV, text, Markdown, JSON, HTML</span></div>
+        <p class="small muted" id="kb-progress" aria-live="polite"></p>
+        <div class="row"><button class="btn" id="kb-sample" type="button">Try with sample documents</button></div>
+        <p class="small muted">Scanned PDFs (photos of pages) have no text to read. Run them through the Screenshot Reader first.</p>
+      </div>
+      <div class="panel">
+        <h2 style="margin-top:0">Write a note</h2>
+        <label for="kb-note-title">Title</label>
+        <input type="text" id="kb-note-title" placeholder="e.g. Plumber visit">
+        <label for="kb-note-body">Note</label>
+        <textarea id="kb-note-body" class="prose" placeholder="Anything you want to find later."></textarea>
+        <div class="row" style="margin-top:8px"><button class="btn primary" id="kb-note-save" type="button">Save note</button></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="row" style="justify-content:space-between"><h2 style="margin:0">Your library</h2><span class="small muted" id="kb-count"></span></div>
+      <div id="kb-docs"></div>
+    </div>
+    <div class="panel" id="kb-detail" hidden></div>
+  </section>
+
+  <section class="tab-panel" data-panel="search" hidden>
+    <div class="panel">
+      <div class="row">
+        <input type="search" id="kb-q" placeholder="Search everything, e.g. bond refund" style="flex:1;min-width:200px">
+        <button class="btn primary" id="kb-go" type="button">Search</button>
+      </div>
+      <label for="kb-filter">Look in</label>
+      <select id="kb-filter"></select>
+      <div id="kb-results" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <section class="tab-panel" data-panel="ask" hidden>
+    <div class="panel">
+      <label for="kb-question" style="margin-top:0">Your question</label>
+      <div class="row">
+        <input type="text" id="kb-question" placeholder="e.g. When is the car service due?" style="flex:1;min-width:200px">
+        <button class="btn primary" id="kb-ask" type="button">Answer</button>
+        <span id="kb-ai-slot"></span>
+      </div>
+      <p class="small muted">Uses the same “Look in” filter as Search. Without AI, the answer is made of the best-matching sentences from your documents, each with a numbered source.</p>
+      <div id="kb-answer" class="kb-answer" aria-live="polite"></div>
+    </div>
+    <div class="panel">
+      <h3 style="margin-top:0">Where does my data go?</h3>
+      <ul class="small">
+        <li>Without AI: nowhere. Reading, indexing, searching and answering all happen in this tab, and the library is saved in this browser’s own storage.</li>
+        <li>With the <strong>in-browser model</strong> (AI settings → “local”): the model runs on your computer, so nothing leaves the device either. The first use downloads the model (about 1 GB) once.</li>
+        <li>With a <strong>Gemini key</strong>: only the question and the few best-matching passages are sent to Google to write the answer.</li>
+      </ul>
+      <div id="kb-ai-note"></div>
+    </div>
+  </section>
+
+  <section class="tab-panel" data-panel="backup" hidden>
+    <div class="panel">
+      <h2 style="margin-top:0">Back up or move your library</h2>
+      <p>Your library lives only in this browser. Export it as one JSON file to keep a copy or open it on another computer.</p>
+      <div class="row">
+        <button class="btn primary" id="kb-export" type="button">Export library (.json)</button>
+        <button class="btn" id="kb-import-btn" type="button">Import library…</button>
+        <input type="file" id="kb-import" accept=".json,application/json" hidden>
+        <button class="btn" id="kb-clear" type="button">Delete everything</button>
+      </div>
+      <p class="small muted">Importing adds to what is already here; a document with the same id is replaced.</p>
+    </div>
+  </section>
+
+  <p class="privacy">Your files stay on your device. Text is pulled out in this browser and kept in its local storage (IndexedDB).</p>
+
+  <dialog id="kb-dialog">
+    <div class="row" style="justify-content:space-between"><h3 id="kb-dialog-title" style="margin:0"></h3><button class="btn small" id="kb-dialog-close" type="button">Close</button></div>
+    <div id="kb-dialog-body" class="kb-view"></div>
+  </dialog>
+</main>
+<script src="../../assets/core.js"></script>
+<script src="../../assets/ai.js"></script>
+<script src="./lib.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

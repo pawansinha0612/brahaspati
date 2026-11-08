@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Email Assistant — Brahaspati</title>
+  <meta name="description" content="Paste a pile of emails to sort them by what they need, draft polite replies from 26 templates in a warm, neutral or formal tone, and check your own drafts for blunt or passive-aggressive phrasing.">
+  <link rel="stylesheet" href="../../assets/style.css">
+  <style>
+    .mail { border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); padding: 12px 14px; margin: 10px 0; }
+    .mail h3 { margin: 0 0 2px; font-size: 16px; overflow-wrap: anywhere; }
+    .mail .meta { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+    .mail ul { margin: 6px 0; padding-left: 18px; font-size: 14px; }
+    .mail li { overflow-wrap: anywhere; }
+    .prio { font-weight: 700; font-size: 13px; min-width: 34px; text-align: center; border-radius: 6px; padding: 2px 6px; background: var(--soft); }
+    .tone-row { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; max-width: 420px; }
+    .tone-row input { width: 100%; accent-color: var(--brand); }
+    .fields { display: grid; gap: 0 12px; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+    .issue { border-left: 3px solid var(--line); padding: 4px 10px; margin: 8px 0; }
+    .issue.sev-bad { border-color: var(--bad); } .issue.sev-warn { border-color: var(--warn); } .issue.sev-info { border-color: var(--accent); }
+    .issue p { margin: 2px 0; overflow-wrap: anywhere; }
+    .subj button { text-align: left; }
+  </style>
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <p class="eyebrow">Utilities</p>
+    <h1>Email Assistant</h1>
+    <p class="lead">Paste a pile of emails to see what needs you first, draft a polite reply from a template in the tone you want, and check your own emails before you hit send.</p>
+    <p class="small muted">This isn’t connected to any mailbox. You copy emails in and copy replies out — nothing is sent, read or stored anywhere else.</p>
+  </section>
+
+  <div class="tabs" data-tabs="em">
+    <button data-tab="sort">Sort my emails</button>
+    <button data-tab="draft">Draft a reply</button>
+    <button data-tab="tone">Check my tone</button>
+  </div>
+
+  <section class="tab-panel" data-panel="sort">
+    <div class="panel">
+      <label for="pile" style="margin-top:0">Paste one or more emails</label>
+      <p class="small muted" style="margin-top:0">Start each one with its “From:” line (as when you copy from Outlook or Gmail), or separate them with a line of <code>---</code>.</p>
+      <textarea id="pile" class="prose" style="min-height:200px"></textarea>
+      <div class="row" style="margin-top:10px"><button class="btn primary" id="sortBtn" type="button">Sort by priority</button><button class="btn" id="sampleSort" type="button">Try with sample</button></div>
+    </div>
+    <div class="stat-row" id="sortStats"></div>
+    <div id="sorted"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="draft">
+    <div class="panel">
+      <div class="cols-2" style="gap:0 14px">
+        <div><label for="tpl" style="margin-top:0">Template</label><select id="tpl"></select></div>
+        <div>
+          <label style="margin-top:0">Tone</label>
+          <div class="tone-row"><span class="small">Warm</span><input type="range" id="tone" min="0" max="2" step="1" value="1" aria-label="Tone: warm, neutral or formal"><span class="small">Formal</span></div>
+          <div class="small muted" id="toneName">Neutral</div>
+        </div>
+      </div>
+      <div class="fields" id="fields"></div>
+      <div class="fields"><div><label for="to">Send to (email)</label><input id="to" type="email" placeholder="name@example.com"></div><div><label for="me">Your name</label><input id="me" type="text"></div></div>
+      <div class="row" style="margin-top:10px"><button class="btn" id="sampleDraft" type="button">Try with sample</button></div>
+    </div>
+    <div class="panel">
+      <label for="dSubj" style="margin-top:0">Subject</label><input id="dSubj" type="text">
+      <label for="dBody">Email <span class="small muted">(edit freely; [brackets] still need filling in)</span></label>
+      <textarea id="dBody" class="prose" style="min-height:240px"></textarea>
+      <div class="row" style="margin-top:10px">
+        <button class="btn primary" id="copyDraft" type="button">Copy</button>
+        <a class="btn" id="mailDraft" href="#">Open in email app</a>
+        <button class="btn" id="checkDraft" type="button">Check tone</button>
+      </div>
+      <div id="aiDraftBox" class="row" style="margin-top:10px"></div>
+      <div id="missing" class="small warn" style="margin-top:8px"></div>
+    </div>
+  </section>
+
+  <section class="tab-panel" data-panel="tone">
+    <div class="panel">
+      <label for="mine" style="margin-top:0">Your draft</label>
+      <textarea id="mine" class="prose" style="min-height:200px" placeholder="Paste the email you’re about to send."></textarea>
+      <div class="row" style="margin-top:10px">
+        <button class="btn primary" id="toneBtn" type="button">Check tone</button>
+        <button class="btn" id="softenBtn" type="button">Soften automatically</button>
+        <button class="btn" id="sampleTone" type="button">Try with sample</button>
+      </div>
+      <div id="aiToneBox" class="row" style="margin-top:10px"></div>
+    </div>
+    <div id="toneOut"></div>
+    <div class="panel">
+      <h3 style="margin-top:0">Subject line ideas</h3>
+      <div id="subjects" class="subj row"><span class="muted small">Check a draft to get ideas.</span></div>
+    </div>
+  </section>
+  <div id="aiOut"></div>
+
+  <p class="privacy">Everything happens in your browser. Sorting and tone checks use fixed word lists, not AI, so they can miss sarcasm or context. If you turn on the optional AI helper, the ✨ buttons send only the text you’re rewriting to the AI you chose.</p>
+  <div id="aiNote"></div>
+</main>
+<script src="../../assets/core.js"></script>
+<script src="../../assets/ai.js"></script>
+<script src="./lib.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

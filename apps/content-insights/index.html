@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Content Insights — Brahaspati</title>
+  <meta name="description" content="Import Facebook (Meta Business Suite) or YouTube Studio analytics CSVs and see which hooks, video lengths, posting times and topics work best, with plain-English recommendations.">
+  <link rel="stylesheet" href="../../assets/style.css">
+  <style>
+    .controls { display: grid; gap: 0 14px; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); align-items: end; }
+    .controls .chk { display: flex; gap: 6px; align-items: center; font-weight: 400; margin: 10px 0; }
+    .recs li { margin: 8px 0; }
+    .map-grid { display: grid; gap: 0 14px; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+    .ds { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; border-bottom: 1px solid var(--line); padding: 6px 0; }
+    .ds b { overflow-wrap: anywhere; }
+    td.t { max-width: 280px; overflow-wrap: anywhere; }
+  </style>
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <p class="eyebrow">Creators · viral content intelligence</p>
+    <h1>Content Insights</h1>
+    <p class="lead">Drop in your Facebook or YouTube analytics export to see which hooks, video lengths, posting times and topics actually work for your audience — and get a rough estimate for your next idea.</p>
+  </section>
+
+  <div class="panel">
+    <div id="drop" class="drop">
+      <b>Drop a CSV or Excel export here</b>, or click to choose a file.<br>
+      <span class="small">Meta Business Suite → Insights → Content → Export. YouTube Studio → Analytics → Advanced mode → Export current view (CSV).</span>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <button class="btn" id="sampleYt">Load sample data (YouTube)</button>
+      <button class="btn" id="sampleFb">Load sample data (Facebook)</button>
+      <button class="btn" id="export">Export backup</button>
+      <button class="btn" id="import">Import backup</button>
+      <button class="btn" id="clear">Clear all</button>
+    </div>
+    <div id="datasets"></div>
+    <div id="mapping"></div>
+    <p class="privacy">Your exports are read in this browser and saved only on this device. Nothing is uploaded. Sample files are made-up numbers.</p>
+    <div id="aiNote"></div>
+  </div>
+
+  <div class="panel controls" id="controls">
+    <div><label for="metric">Measure success by</label><select id="metric"></select></div>
+    <div><label for="pf">Platform</label><select id="pf"><option value="">All platforms</option><option value="facebook">Facebook</option><option value="youtube">YouTube</option><option value="other">Other</option></select></div>
+    <label class="chk"><input type="checkbox" id="perDay"> Per day since publishing (fairer to new posts)</label>
+  </div>
+
+  <div class="tabs" data-tabs="ci">
+    <button data-tab="overview">Overview</button>
+    <button data-tab="hooks">Hooks</button>
+    <button data-tab="timing">Length &amp; timing</button>
+    <button data-tab="topics">Topics</button>
+    <button data-tab="recs">Recommendations</button>
+    <button data-tab="predict">Estimate an idea</button>
+  </div>
+
+  <section class="tab-panel" data-panel="overview">
+    <div class="stat-row" id="stats" style="margin-top:14px"></div>
+    <div class="cols-2">
+      <div><h2>Top performers</h2><div id="top"></div></div>
+      <div><h2>Bottom performers</h2><div id="bottom"></div></div>
+    </div>
+    <h2>All posts</h2>
+    <div id="all"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="hooks">
+    <p class="muted">Each title is checked for common hook patterns. “Lift” compares the average for titles with that pattern against all posts (1.0× = average). A title can match several patterns.</p>
+    <div class="panel" id="hookChart"></div>
+    <div id="hookTable"></div>
+    <h2>Best first words</h2>
+    <p class="small muted">Opening words used in at least two titles.</p>
+    <div id="firstWords"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="timing">
+    <div class="cols-2">
+      <div class="panel"><h3 style="margin-top:0">By video length</h3><div id="durChart"></div></div>
+      <div class="panel"><h3 style="margin-top:0">By day of week</h3><div id="dayChart"></div></div>
+    </div>
+    <div class="panel"><h3 style="margin-top:0">By time of day</h3><div id="hourChart"></div></div>
+  </section>
+
+  <section class="tab-panel" data-panel="topics">
+    <p class="muted">Words that appear in at least two titles or descriptions, ranked by how far above average they perform and how often you use them. Common filler words are ignored.</p>
+    <div id="kw"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="recs">
+    <div class="panel"><ul class="recs" id="recs"></ul><div id="aiRecs"></div><div id="aiRecsOut"></div></div>
+  </section>
+
+  <section class="tab-panel" data-panel="predict">
+    <div class="panel">
+      <p class="muted" style="margin-top:0">Type a planned title and length. We find your most similar past posts (same length band, same hook patterns, shared words) and show the range they got. This is a rough guide, not a promise.</p>
+      <label for="idea">Planned title</label><input type="text" id="idea" placeholder="When my father found the old letter">
+      <label for="ideaDur">Length (seconds)</label><input type="number" id="ideaDur" value="45" min="1" style="max-width:160px">
+      <div class="row" style="margin-top:12px"><button class="btn primary" id="estimate">Estimate</button></div>
+      <div id="estOut" style="margin-top:12px"></div>
+    </div>
+  </section>
+</main>
+<script src="../../assets/core.js"></script>
+<script src="../../assets/ai.js"></script>
+<script src="./lib.js"></script>
+<script src="./sample.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

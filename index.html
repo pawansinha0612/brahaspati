@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Brahaspati — free private toolbox</title>
+  <meta name="description" content="Free tools for small businesses, creators and everyday life. They run in your browser, so your files and data stay on your device.">
+  <link rel="stylesheet" href="assets/style.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='10' fill='none' stroke='%23b4531b' stroke-width='2'/%3E%3Ccircle cx='12' cy='12' r='4' fill='%23b4531b'/%3E%3C/svg%3E">
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <p class="eyebrow">Free · private · no sign-up</p>
+    <h1>One toolbox for business, content and everyday jobs</h1>
+    <p class="lead">Every tool runs in your browser. Your spreadsheets, documents and notes never leave your device, and nothing needs an account. An optional AI helper can write and summarise for you, either inside your browser or with your own free key.</p>
+    <input type="search" id="q" placeholder="Search tools…" aria-label="Search tools" style="max-width:420px;margin-top:8px">
+  </section>
+  <div id="cats"></div>
+</main>
+<script src="assets/core.js"></script>
+<script>
+(function () {
+  var CATS = [['business', 'Business', 'For shops, sole traders and small teams.'], ['creators', 'Creators', 'Plan, write and measure your content.'],
+    ['personal', 'Personal', 'Money, jobs, learning and your own files.'], ['utilities', 'Utilities', 'Quick everyday converters and helpers.']];
+  var apps = [];
+  function render() {
+    var q = B.$('#q').value.trim().toLowerCase();
+    B.$('#cats').innerHTML = CATS.map(function (c) {
+      var list = apps.filter(function (a) { return a.cat === c[0] && (!q || (a.name + ' ' + a.desc).toLowerCase().indexOf(q) >= 0); });
+      if (!list.length) return '';
+      return '<section id="' + c[0] + '"><h2>' + c[1] + '</h2><p class="muted" style="margin-top:-6px">' + c[2] + '</p><div class="grid">' +
+        list.map(function (a) {
+          var href = a.url || ('apps/' + a.slug + '/');
+          return '<a class="card" href="' + B.esc(href) + '"><h3>' + B.esc(a.name) + (a.url ? ' <span class="tag">↗</span>' : '') + '</h3><p>' + B.esc(a.desc) + '</p></a>';
+        }).join('') + '</div></section>';
+    }).join('') || '<p class="muted">No tools match.</p>';
+  }
+  fetch('apps.json').then(function (r) { return r.json(); }).then(function (a) { apps = a; render(); });
+  B.$('#q').addEventListener('input', render);
+})();
+</script>
+</body>
+</html>

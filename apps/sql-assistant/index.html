@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SQL Assistant — Brahaspati</title>
+  <meta name="description" content="Format SQL, get a plain-English explanation of what a query does, and spot slow or risky patterns with fixes for PostgreSQL, MySQL, SQL Server and Oracle. Runs in your browser.">
+  <link rel="stylesheet" href="../../assets/style.css">
+  <style>
+    .issue { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin: 10px 0; background: var(--panel); }
+    .issue h3 { margin: 0 0 4px; font-size: 16px; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+    .issue p { margin: 4px 0; }
+    .issue pre { margin: 6px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .expl li { margin: 4px 0; }
+    .expl ul ul { border-left: 2px solid var(--line); padding-left: 16px; }
+    #formatted { white-space: pre; }
+    .kw { color: var(--brand); font-weight: 600; } .str { color: var(--ok); } .cm { color: var(--muted); font-style: italic; } .num { color: var(--accent); }
+  </style>
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <p class="eyebrow">Utilities</p>
+    <h1>SQL Assistant</h1>
+    <p class="lead">Paste a query to tidy it up, read what it does in plain English, and catch slow or risky patterns — like an UPDATE with no WHERE — before you run it.</p>
+  </section>
+
+  <div class="panel">
+    <label for="sql">Your SQL</label>
+    <textarea id="sql" spellcheck="false" style="min-height:180px" placeholder="SELECT * FROM customers WHERE …"></textarea>
+    <div class="row" style="margin-top:10px">
+      <label for="dialect" style="margin:0">Database</label>
+      <select id="dialect" style="width:auto"></select>
+      <label style="margin:0;font-weight:400"><input type="checkbox" id="upper" checked> Uppercase keywords</label>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <button class="btn primary" id="go" type="button">Format &amp; check</button>
+      <button class="btn" id="sample" type="button">Try with sample</button>
+      <button class="btn" id="useFormatted" type="button">Put formatted SQL back in the box</button>
+    </div>
+    <div id="aiBox" class="row" style="margin-top:10px"></div>
+  </div>
+
+  <div class="stat-row" id="stats"></div>
+
+  <div class="tabs" data-tabs="sql">
+    <button data-tab="check">Check</button>
+    <button data-tab="explain">Explain</button>
+    <button data-tab="format">Formatted</button>
+  </div>
+  <section class="tab-panel" data-panel="check"><div id="issues"></div></section>
+  <section class="tab-panel" data-panel="explain"><div class="panel expl" id="explain"></div></section>
+  <section class="tab-panel" data-panel="format">
+    <div class="panel">
+      <div class="row"><button class="btn small" id="copyFmt" type="button">Copy</button><button class="btn small" id="dlFmt" type="button">Download .sql</button></div>
+      <pre id="formatted" style="margin-top:10px"></pre>
+    </div>
+  </section>
+  <div id="aiOut"></div>
+
+  <p class="privacy">Your SQL stays in your browser — nothing is sent to a server or run against a database. The checks are fixed rules (no AI) and can’t see your indexes or data sizes, so treat them as hints. If you turn on the optional AI helper, the ✨ button sends only the SQL to the AI you chose.</p>
+  <div id="aiNote"></div>
+</main>
+<script src="../../assets/core.js"></script>
+<script src="../../assets/ai.js"></script>
+<script src="./lib.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

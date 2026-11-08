@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Excel &amp; CSV Intelligence — Brahaspati</title>
+  <meta name="description" content="Compare two spreadsheets, find missing and duplicate records, reconcile invoices against payments, check your data and download a reconciliation report. Free and private: files never leave your browser.">
+  <link rel="stylesheet" href="../../assets/style.css">
+  <style>
+    .slots { display: grid; gap: 14px; grid-template-columns: 1fr 1fr; }
+    @media (max-width: 760px) { .slots { grid-template-columns: 1fr; } }
+    .slot h3 { margin: 0 0 8px; }
+    .slot .drop { padding: 16px; cursor: pointer; }
+    .slot .meta { margin: 8px 0 0; }
+    .keyrow, .rulerow { display: grid; gap: 8px; grid-template-columns: 1fr 1fr auto; align-items: center; margin: 6px 0; }
+    .rulerow { grid-template-columns: 1.2fr 1fr 1fr auto; }
+    @media (max-width: 560px) { .rulerow { grid-template-columns: 1fr 1fr; } .keyrow { grid-template-columns: 1fr 1fr; } }
+    .opts { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); align-items: end; }
+    .opts label.check, .checks label { display: flex; gap: 6px; align-items: center; font-weight: 400; margin: 4px 0; }
+    .checks { display: flex; flex-wrap: wrap; gap: 4px 16px; }
+    td.diff { background: color-mix(in srgb, var(--warn) 16%, transparent); }
+    td.diff del { color: var(--bad); }
+    td.diff ins { color: var(--ok); text-decoration: none; font-weight: 600; }
+    td.diff .arrow { color: var(--muted); padding: 0 4px; }
+    .results h3 { margin-top: 22px; }
+    .group-sep td { border-top: 2px solid var(--line); }
+  </style>
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <p class="eyebrow">Business · spreadsheets</p>
+    <h1>Excel &amp; CSV Intelligence</h1>
+    <p class="lead">Compare two spreadsheets, find missing and duplicate records, match invoices to payments and check your data for mistakes. Then download a tidy report for your bookkeeper.</p>
+    <div class="row no-print">
+      <button class="btn primary" id="sample" type="button">Load sample data</button>
+      <button class="btn" id="clearAll" type="button">Clear everything</button>
+    </div>
+    <p class="privacy">Your files are read and processed inside this browser. Nothing is uploaded.</p>
+  </section>
+
+  <div class="tabs" data-tabs="main">
+    <button data-tab="compare">Compare</button>
+    <button data-tab="dups">Duplicates</button>
+    <button data-tab="recon">Invoices ↔ payments</button>
+    <button data-tab="validate">Data checks</button>
+    <button data-tab="report">Report &amp; export</button>
+  </div>
+
+  <section class="tab-panel" data-panel="compare">
+    <p class="muted">Load two versions of a list, for example your customer list from the CRM and from the accounting system. Pick the column that identifies each row (the key), then compare.</p>
+    <div class="slots" id="slotsAB"></div>
+    <div class="panel">
+      <h3 style="margin-top:0">Match rows using</h3>
+      <div id="keys"></div>
+      <button class="btn small" id="addKey" type="button">+ Add another key column</button>
+      <div class="opts" style="margin-top:12px">
+        <div><label for="tol">Number tolerance</label><input type="number" id="tol" min="0" step="0.01" value="0"></div>
+        <label class="check"><input type="checkbox" id="ignoreCase" checked> Ignore upper/lower case</label>
+        <label class="check"><input type="checkbox" id="trimSpaces" checked> Ignore extra spaces</label>
+      </div>
+      <p class="small muted">Tolerance lets small differences pass, for example 0.05 treats $310.50 and $310.52 as the same. Numbers and dates are compared by value, so "1,250.00" equals "1250" and 03/10/2026 equals 2026-10-03.</p>
+      <button class="btn primary" id="runCompare" type="button">Compare files</button>
+    </div>
+    <div id="compareOut" class="results"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="dups">
+    <p class="muted">Find rows that appear more than once, even when they are typed slightly differently.</p>
+    <div class="panel">
+      <div class="opts">
+        <div><label for="dupFile">File</label><select id="dupFile"><option value="A">File A</option><option value="B">File B</option></select></div>
+        <div><label for="dupMode">How strict</label><select id="dupMode">
+          <option value="exact">Exact (ignores case and spaces)</option>
+          <option value="fuzzy" selected>Loose (also ignores punctuation, "Pty Ltd" etc.)</option>
+          <option value="similar">Similar spelling (catches typos)</option></select></div>
+      </div>
+      <label>Columns that should be unique together</label>
+      <div class="checks" id="dupCols"></div>
+      <button class="btn primary" id="runDups" type="button" style="margin-top:10px">Find duplicates</button>
+    </div>
+    <div id="dupsOut" class="results"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="recon">
+    <p class="muted">Load your invoice list and your bank statement or payments list. Payments are matched to invoices by invoice number first (even when it is buried in the bank description), then by amount within a few days of the invoice date.</p>
+    <div class="slots" id="slotsIP"></div>
+    <div class="panel">
+      <div class="cols-2">
+        <div><h3 style="margin-top:0">Invoice columns</h3><div id="invMap"></div></div>
+        <div><h3 style="margin-top:0">Payment columns</h3><div id="payMap"></div></div>
+      </div>
+      <div class="opts" style="margin-top:8px">
+        <div><label for="days">Date window (± days)</label><input type="number" id="days" min="0" value="14"></div>
+        <div><label for="rtol">Amount tolerance ($)</label><input type="number" id="rtol" min="0" step="0.01" value="0.01"></div>
+      </div>
+      <button class="btn primary" id="runRecon" type="button" style="margin-top:12px">Reconcile</button>
+    </div>
+    <div id="reconOut" class="results"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="validate">
+    <p class="muted">Set rules for each column and see every row that breaks them. Blank cells only fail the "Required" rule.</p>
+    <div class="panel">
+      <div class="opts"><div><label for="valFile">File</label><select id="valFile"><option value="A">File A</option><option value="B">File B</option></select></div></div>
+      <div id="rules" style="margin-top:10px"></div>
+      <div class="row" style="margin-top:8px">
+        <button class="btn small" id="addRule" type="button">+ Add rule</button>
+        <button class="btn small" id="suggestRules" type="button">Suggest rules from the data</button>
+        <button class="btn small" id="exportRules" type="button">Save rules (JSON)</button>
+        <button class="btn small" id="importRules" type="button">Load rules (JSON)</button>
+      </div>
+      <button class="btn primary" id="runValidate" type="button" style="margin-top:12px">Check data</button>
+    </div>
+    <div id="valOut" class="results"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="report">
+    <div class="panel">
+      <p>The report includes every check you have run on this page. Print it or save it as PDF from the report window.</p>
+      <div class="checks" id="reportParts"></div>
+      <label for="reportTitle">Report title</label>
+      <input type="text" id="reportTitle" value="Reconciliation report">
+      <div class="row" style="margin-top:12px">
+        <button class="btn primary" id="dlReport" type="button">Download report (HTML)</button>
+        <button class="btn" id="printReport" type="button">Open printable report</button>
+        <button class="btn" id="dlXlsx" type="button">Download all results (Excel)</button>
+      </div>
+      <h3>Single result sets as CSV</h3>
+      <div class="row" id="csvLinks"></div>
+      <div id="aiBox" style="margin-top:12px"></div>
+      <div id="aiOut"></div>
+    </div>
+  </section>
+</main>
+<script src="../../assets/core.js"></script>
+<script src="../../assets/ai.js"></script>
+<script src="./lib.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

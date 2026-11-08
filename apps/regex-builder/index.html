@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Regex Builder — Brahaspati</title>
+  <meta name="description" content="Describe what you want to match in plain English and get a regular expression, explained piece by piece, tested live and ready to copy for JavaScript, Python, Java or C#.">
+  <link rel="stylesheet" href="../../assets/style.css">
+  <style>
+    .pat { font-family: var(--mono); font-size: 15px; }
+    .flags label { display: inline-flex; gap: 4px; align-items: center; font-weight: 400; margin: 0 10px 0 0; font-family: var(--mono); }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .chips button { border: 1px solid var(--line); background: var(--soft); color: var(--ink); border-radius: 99px; padding: 3px 10px; font: inherit; font-size: 13px; cursor: pointer; }
+    .chips button:hover { border-color: var(--brand); }
+    .hl { white-space: pre-wrap; overflow-wrap: anywhere; min-height: 80px; }
+    .hl mark { background: color-mix(in srgb, var(--brand) 28%, transparent); color: inherit; border-radius: 3px; outline: 1px solid color-mix(in srgb, var(--brand) 55%, transparent); }
+    .hl mark.alt { background: color-mix(in srgb, var(--accent) 25%, transparent); outline-color: color-mix(in srgb, var(--accent) 55%, transparent); }
+    .hl mark.empty { padding: 0 1px; }
+    .tok td:first-child { font-family: var(--mono); white-space: pre; }
+    .tok td { overflow-wrap: anywhere; }
+    .err { color: var(--bad); font-size: 14px; }
+    .code-block { position: relative; }
+    .code-block pre { margin: 6px 0 14px; white-space: pre-wrap; overflow-wrap: anywhere; }
+  </style>
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <p class="eyebrow">Utilities</p>
+    <h1>Regex Builder</h1>
+    <p class="lead">Describe what you want to match in plain English — “starts with INV- followed by 6 digits” or “Australian mobile” — and get a regular expression, explained piece by piece and tested live on your own text.</p>
+  </section>
+
+  <div class="panel">
+    <label for="desc">What do you want to match?</label>
+    <textarea id="desc" class="prose" style="min-height:70px" placeholder="e.g. between 8 and 20 characters, contains a digit, contains an uppercase letter"></textarea>
+    <div class="chips" id="examples" aria-label="Examples"></div>
+    <div class="row" style="margin-top:12px">
+      <button class="btn primary" id="build" type="button">Build regex</button>
+      <button class="btn" id="sample" type="button">Try with sample</button>
+      <select id="catalogue" aria-label="Pick a common pattern" style="width:auto;max-width:100%"><option value="">…or pick a common pattern</option></select>
+    </div>
+    <div id="aiBox" class="row" style="margin-top:10px"></div>
+    <div id="buildInfo" class="small" style="margin-top:10px"></div>
+  </div>
+
+  <div class="panel">
+    <label for="pattern">Regular expression <span class="small muted">(edit it directly if you like)</span></label>
+    <input id="pattern" class="pat" type="text" spellcheck="false" autocomplete="off" autocapitalize="off">
+    <div class="flags row" style="margin-top:8px" id="flags">
+      <span class="small muted">Flags:</span>
+      <label title="find every match"><input type="checkbox" value="g" checked> g</label>
+      <label title="ignore case"><input type="checkbox" value="i"> i</label>
+      <label title="^ and $ per line"><input type="checkbox" value="m"> m</label>
+      <label title="dot matches new lines"><input type="checkbox" value="s"> s</label>
+      <label title="Unicode"><input type="checkbox" value="u"> u</label>
+    </div>
+    <div id="patErr" class="err" role="alert"></div>
+    <div class="row" style="margin-top:8px"><button class="btn small" id="copyPat" type="button">Copy pattern</button><code id="jsLit" class="small muted" style="overflow-wrap:anywhere"></code></div>
+  </div>
+
+  <div class="tabs" data-tabs="rx">
+    <button data-tab="test">Test</button>
+    <button data-tab="explain">Explain</button>
+    <button data-tab="code">Copy as code</button>
+  </div>
+
+  <section class="tab-panel" data-panel="test">
+    <div class="panel">
+      <label for="testText">Test text</label>
+      <textarea id="testText" placeholder="Paste some text to try the pattern on."></textarea>
+      <p class="small" id="matchCount" style="margin:10px 0 6px"></p>
+      <div class="hl panel" id="highlight" style="margin:0;background:var(--code);font-family:var(--mono);font-size:13px"></div>
+      <h3>Matches and groups</h3>
+      <div id="groups" class="small muted">No matches yet.</div>
+      <h3>Replace preview</h3>
+      <label for="repl" class="small">Replace each match with <span class="muted">($1, $2 or $&lt;name&gt; insert groups; $&amp; is the whole match)</span></label>
+      <input id="repl" type="text" class="pat" placeholder="e.g. [$&amp;]">
+      <pre id="replOut" class="hl" style="margin-top:8px"></pre>
+      <button class="btn small" id="copyRepl" type="button">Copy result</button>
+    </div>
+  </section>
+
+  <section class="tab-panel" data-panel="explain">
+    <div class="panel">
+      <h3 style="margin-top:0">Piece by piece</h3>
+      <div id="explain"></div>
+      <h3>Flags</h3>
+      <ul id="flagNotes"></ul>
+      <h3>JavaScript vs Python vs Java vs C#</h3>
+      <ul id="flavour"></ul>
+    </div>
+  </section>
+
+  <section class="tab-panel" data-panel="code">
+    <div class="panel" id="code"></div>
+  </section>
+
+  <p class="privacy">Everything runs in your browser — your test text is never uploaded. The builder uses fixed rules and a catalogue of common patterns, not AI. If you turn on the optional AI helper, the ✨ button sends only your description to the AI you chose.</p>
+  <div id="aiNote"></div>
+</main>
+<script src="../../assets/core.js"></script>
+<script src="../../assets/ai.js"></script>
+<script src="./lib.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>
