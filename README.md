@@ -16,6 +16,11 @@ data stay on your device. You don't need an account.
 
 The full list, with descriptions, is in [`apps.json`](apps.json). The home page is built from it.
 
+## Install it as an app
+
+Brahaspati is an installable web app. In Chrome or Edge, choose **Install** in the address bar; on iPhone, use
+Share → **Add to Home Screen**. Pages you've opened then work offline (`sw.js`, network first with an offline copy).
+
 ## Optional AI helper
 
 Every tool works without AI. On the [AI settings](ai/) page, a visitor can turn on either:

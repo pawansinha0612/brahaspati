@@ -15,6 +15,8 @@
     <h1>One toolbox for business, content and everyday jobs</h1>
     <p class="lead">Every tool runs in your browser. Your spreadsheets, documents and notes never leave your device, and nothing needs an account. An optional AI helper can write and summarise for you, either inside your browser or with your own free key.</p>
     <input type="search" id="q" placeholder="Search tools…" aria-label="Search tools" style="max-width:420px;margin-top:8px">
+    <p class="small muted" id="install-tip">Use it like a desktop app: in Chrome or Edge, choose <b>Install</b> in the address bar (or menu → <b>Install Brahaspati</b>). On iPhone: Share → <b>Add to Home Screen</b>. Pages you've opened then work offline.
+      <button class="btn small" id="install" hidden>Install the app</button></p>
   </section>
   <div id="cats"></div>
 </main>
@@ -38,6 +40,10 @@
   }
   fetch('apps.json').then(function (r) { return r.json(); }).then(function (a) { apps = a; render(); });
   B.$('#q').addEventListener('input', render);
+  var deferred = null;
+  window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); deferred = e; B.$('#install').hidden = false; });
+  B.$('#install').addEventListener('click', function () { if (deferred) { deferred.prompt(); deferred = null; B.$('#install').hidden = true; } });
+  if (window.matchMedia && matchMedia('(display-mode: standalone)').matches) B.$('#install-tip').hidden = true;
 })();
 </script>
 </body>

@@ -228,8 +228,19 @@
       'Made by <a href="https://pawansinha.com.au/">Pawan Sinha</a> · <a href="https://github.com/pawansinha0612/brahaspati">Source</a>' })]);
     document.body.appendChild(foot);
   };
+  // Installable app: manifest + icons on every page, and the offline service worker.
+  B.pwa = function () {
+    var head = document.head;
+    if (!head.querySelector('link[rel="manifest"]')) head.appendChild(B.h('link', { rel: 'manifest', href: B.base + 'manifest.webmanifest' }));
+    if (!head.querySelector('meta[name="theme-color"]')) head.appendChild(B.h('meta', { name: 'theme-color', content: '#b4531b' }));
+    if (!head.querySelector('link[rel="apple-touch-icon"]')) head.appendChild(B.h('link', { rel: 'apple-touch-icon', href: B.base + 'assets/icons/apple-touch-icon.png' }));
+    if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+      navigator.serviceWorker.register(B.base + 'sw.js', { scope: B.base }).catch(function () {});
+    }
+  };
   if (typeof document !== 'undefined') {
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', B.chrome); else B.chrome();
+    try { B.pwa(); } catch (e) {}
   }
   root.B = B;
 })(typeof window !== 'undefined' ? window : this);
