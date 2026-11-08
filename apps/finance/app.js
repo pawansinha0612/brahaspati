@@ -18,6 +18,9 @@
   }
   function fillMonthSelect(el, withAll) {
     var cur = el.value, ms = months();
+    // No statements yet: show a clear placeholder instead of an empty drop-down.
+    el.disabled = !ms.length;
+    if (!ms.length) { el.innerHTML = '<option value="">No statements yet</option>'; return; }
     el.innerHTML = (withAll ? '<option value="">All months</option>' : '') + ms.map(function (m) { return '<option value="' + m + '">' + monthLabel(m) + '</option>'; }).join('');
     if (cur && (ms.indexOf(cur) >= 0 || (withAll && cur === ''))) el.value = cur;
   }
@@ -25,7 +28,7 @@
 
   // ---------- overview ----------
   function renderOverview() {
-    var has = state.txs.length > 0; $('#ovEmpty').hidden = has; $('#ovBody').hidden = !has;
+    var has = state.txs.length > 0; $('#ovEmpty').hidden = has; $('#ovBody').hidden = !has; $('#ovMonthRow').hidden = !has;
     var sel = $('#ovMonth'); fillMonthSelect(sel); if (!has) return;
     if (!ovPicked) { var ms = months(); sel.value = ms[0] === todayIso().slice(0, 7) && ms[1] && +todayIso().slice(8) < 20 ? ms[1] : ms[0]; }
     var m = sel.value || months()[0];
@@ -329,6 +332,12 @@
   });
   var showTab = B.tabs($('[data-tabs="fin"]'), function (id) { render(id); });
   $('#goImport').addEventListener('click', function () { showTab('import'); $('#drop').focus(); });
+  // Buttons in the "Start here" box reuse the hero buttons.
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest) return;
+    if (e.target.closest('[data-go-import]')) $('#goImport').click();
+    else if (e.target.closest('[data-go-sample]')) $('#sample').click();
+  });
   document.addEventListener('click', function (e) { var g = e.target.getAttribute && e.target.getAttribute('data-goto'); if (g) { e.preventDefault(); showTab(g); } });
   $('#ovMonth').addEventListener('change', function () { ovPicked = true; renderOverview(); });
 

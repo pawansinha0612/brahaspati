@@ -50,12 +50,21 @@
   </div>
 
   <section class="tab-panel" data-panel="overview">
-    <div class="row" style="margin-top:14px">
+    <div class="row" style="margin-top:14px" id="ovMonthRow">
       <label for="ovMonth" style="margin:0">Month</label>
       <select id="ovMonth" style="width:auto"></select>
     </div>
     <div id="ovEmpty" class="panel" hidden>
-      <p>No transactions yet. Import a bank statement or load the sample data to see your dashboard.</p>
+      <h2 style="margin-top:0">Start here</h2>
+      <p>No transactions yet. Your dashboard appears as soon as you add a bank statement.</p>
+      <ol>
+        <li>In your bank's app or website, export your transactions as a <b>CSV</b> file (Excel works too).</li>
+        <li>Click <b>Import a statement</b> and drop the file in. CommBank, NAB, Westpac, ANZ, ING and most others are recognised automatically.</li>
+      </ol>
+      <div class="row">
+        <button class="btn primary" type="button" data-go-import>Import a statement</button>
+        <button class="btn" type="button" data-go-sample>Just looking? Load sample data</button>
+      </div>
     </div>
     <div id="ovBody">
       <div class="stat-row" id="ovStats" style="margin-top:14px"></div>

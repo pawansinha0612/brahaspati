@@ -238,9 +238,35 @@
       navigator.serviceWorker.register(B.base + 'sw.js', { scope: B.base }).catch(function () {});
     }
   };
+  // A drop-down with nothing in it looks broken (e.g. "Product" before any sales are loaded).
+  // Give every empty <select> a placeholder; apps that fill it later simply replace the placeholder.
+  B.EMPTY_SELECT_TEXT = 'Nothing to choose yet — add or load data first';
+  function placeholdEmpty(sel) {
+    if (sel.tagName !== 'SELECT' || sel.multiple) return;
+    var ph = sel.querySelector('option[data-bh-placeholder]');
+    if (ph && sel.options.length > 1) { var keep = sel.value === '' ? null : sel.value; ph.remove(); if (keep != null) sel.value = keep; return; }
+    if (sel.options.length) return;
+    var o = document.createElement('option'); o.value = ''; o.textContent = sel.getAttribute('data-empty') || B.EMPTY_SELECT_TEXT;
+    o.setAttribute('data-bh-placeholder', ''); sel.appendChild(o);
+  }
+  B.watchEmptySelects = function () {
+    Array.prototype.forEach.call(document.querySelectorAll('select'), placeholdEmpty);
+    if (!window.MutationObserver) return;
+    new MutationObserver(function (muts) {
+      muts.forEach(function (m) {
+        if (m.target.tagName === 'SELECT') placeholdEmpty(m.target);
+        Array.prototype.forEach.call(m.addedNodes, function (n) {
+          if (n.nodeType !== 1) return;
+          if (n.tagName === 'SELECT') placeholdEmpty(n); else if (n.querySelectorAll) Array.prototype.forEach.call(n.querySelectorAll('select'), placeholdEmpty);
+        });
+      });
+    }).observe(document.body, { childList: true, subtree: true });
+  };
   if (typeof document !== 'undefined') {
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', B.chrome); else B.chrome();
     try { B.pwa(); } catch (e) {}
+    var startWatch = function () { try { B.watchEmptySelects(); } catch (e) {} };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', startWatch); else setTimeout(startWatch, 0);
   }
   root.B = B;
 })(typeof window !== 'undefined' ? window : this);
