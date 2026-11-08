@@ -1,0 +1,99 @@
+/* ProductForge UI styles — tokens only (see assets/style.css). Load after style.css. */
+.fg-root input[type=tel], .fg-root input[type=datetime-local], .fg-root input[type=time], .fg-dialog input[type=tel], .fg-dialog input[type=datetime-local], .fg-dialog input[type=time] {
+  width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--ink); font: inherit; font-size: 15px;
+}
+.fg-toolbar { margin: 14px 0 10px; }
+.fg-toolbar input[type=search] { max-width: 240px; }
+.fg-toolbar select { width: auto; max-width: 180px; }
+.fg-seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.fg-seg button { border: 0; background: var(--panel); color: var(--muted); padding: 6px 12px; font: inherit; font-size: 14px; cursor: pointer; }
+.fg-seg button[aria-pressed="true"] { background: var(--soft); color: var(--ink); font-weight: 600; }
+.fg-linkbtn { background: none; border: 0; padding: 0; color: var(--accent); font: inherit; cursor: pointer; text-align: left; text-decoration: underline; }
+th button.fg-sort { background: none; border: 0; padding: 0; font: inherit; font-weight: 600; color: var(--ink); cursor: pointer; white-space: nowrap; }
+td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.pill-mute { font-size: 12px; padding: 1px 8px; border-radius: 99px; font-weight: 600; background: var(--soft); color: var(--muted); }
+
+/* board */
+.fg-board { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(210px, 1fr); gap: 10px; overflow-x: auto; padding-bottom: 6px; }
+.fg-col { background: var(--soft); border-radius: var(--radius); padding: 8px; min-height: 120px; }
+.fg-col.over { outline: 2px dashed var(--brand); }
+.fg-col h4 { margin: 2px 4px 8px; font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); display: flex; justify-content: space-between; }
+.fg-card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; margin-bottom: 8px; font-size: 14px; cursor: grab; }
+.fg-card .small { margin: 2px 0; }
+.fg-card select { margin-top: 6px; padding: 3px 6px; font-size: 13px; }
+
+/* form dialog */
+dialog.fg-dialog { max-width: 780px; max-height: 92vh; overflow: auto; padding: 0; }
+dialog.fg-dialog form { padding: 16px; }
+.fg-dialog .fg-dhead { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.fg-dialog .fg-dhead h3 { margin: 0; }
+.fg-form { display: grid; gap: 0 14px; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+.fg-form .full { grid-column: 1 / -1; }
+.fg-err { color: var(--bad); font-size: 13px; margin: 2px 0 0; }
+.fg-help { color: var(--muted); font-size: 12px; margin: 2px 0 0; }
+.fg-check { display: flex; gap: 6px; align-items: center; font-weight: 400; margin: 4px 12px 4px 0; }
+.fg-checks { display: flex; flex-wrap: wrap; }
+.fg-readonly { padding: 8px 10px; background: var(--soft); border-radius: 8px; min-height: 38px; }
+.fg-actions { position: sticky; bottom: 0; background: var(--panel); padding: 12px 0 2px; border-top: 1px solid var(--line); margin-top: 14px; }
+
+/* photos */
+.fg-thumbs { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0; }
+.fg-thumb { position: relative; width: 84px; height: 64px; border-radius: 6px; overflow: hidden; border: 1px solid var(--line); background: var(--soft); }
+.fg-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.fg-thumb button { position: absolute; top: 2px; right: 2px; border: 0; border-radius: 99px; width: 22px; height: 22px; line-height: 20px; padding: 0; background: var(--panel); color: var(--ink); cursor: pointer; }
+
+/* checklist */
+.fg-cl-group { font-weight: 700; font-size: 14px; margin: 12px 0 4px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.fg-cl-item { border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; margin: 4px 0; }
+.fg-cl-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.fg-cl-row input[type=text] { flex: 1 1 160px; width: auto; padding: 5px 8px; font-size: 14px; }
+.fg-cl-row select { width: auto; padding: 4px 6px; font-size: 13px; }
+.fg-cl-row .fg-mini { font-size: 12px; color: var(--muted); display: inline-flex; gap: 4px; align-items: center; font-weight: 400; margin: 0; }
+.fg-cl-done { text-decoration: line-through; color: var(--muted); }
+.fg-progress { height: 6px; background: var(--soft); border-radius: 4px; overflow: hidden; margin: 4px 0; }
+.fg-progress div { height: 100%; background: var(--ok); }
+
+/* lines */
+.fg-line { display: grid; gap: 6px; grid-template-columns: 1fr 70px 100px 90px auto; align-items: center; margin: 4px 0; }
+.fg-line input { padding: 5px 8px; font-size: 14px; }
+.fg-line .amt { text-align: right; font-variant-numeric: tabular-nums; font-size: 14px; }
+@media (max-width: 560px) { .fg-line { grid-template-columns: 1fr 1fr 1fr auto; } .fg-line .desc { grid-column: 1 / -1; } }
+
+/* signature */
+.fg-sig canvas { width: 100%; height: 160px; border: 1px solid var(--line); border-radius: 8px; touch-action: none; display: block; }
+.fg-sig img { max-width: 100%; height: 100px; border: 1px solid var(--line); border-radius: 8px; display: block; }
+
+/* detail */
+.fg-detail h3 { margin: 0 0 6px; }
+.fg-dl { display: grid; grid-template-columns: minmax(110px, 30%) 1fr; gap: 4px 12px; margin: 10px 0; font-size: 14px; }
+.fg-dl dt { color: var(--muted); }
+.fg-dl dd { margin: 0; min-width: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+@media (max-width: 480px) { .fg-dl { grid-template-columns: 1fr; } .fg-dl dd { margin-bottom: 6px; } }
+
+/* calendar */
+.fg-cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.fg-cal .h { background: var(--soft); font-size: 12px; font-weight: 600; text-align: center; padding: 4px 0; }
+.fg-cal .d { min-height: 78px; border-top: 1px solid var(--line); border-left: 1px solid var(--line); padding: 3px; font-size: 12px; min-width: 0; background: var(--panel); }
+.fg-cal .d:nth-child(7n+1) { border-left: 0; }
+.fg-cal .d.out { background: var(--bg); color: var(--muted); }
+.fg-cal .d.today .n { background: var(--brand); color: var(--brand-ink); border-radius: 99px; padding: 0 5px; }
+.fg-ev { display: block; width: 100%; border: 0; text-align: left; font: inherit; font-size: 11px; background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--ink); border-radius: 4px; padding: 1px 4px; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+.fg-week .day { border-top: 1px solid var(--line); padding: 6px 0; }
+.fg-week .day h4 { margin: 0 0 4px; font-size: 14px; }
+.fg-week .fg-ev { font-size: 14px; padding: 4px 8px; white-space: normal; }
+
+/* reminders */
+.fg-rem { display: flex; gap: 10px; align-items: baseline; padding: 6px 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.fg-rem .when { min-width: 110px; font-variant-numeric: tabular-nums; }
+
+/* gantt-style bars (used by apps) */
+.fg-gantt { position: relative; }
+.fg-gantt .g-row { display: grid; grid-template-columns: minmax(90px, 30%) 1fr; gap: 8px; align-items: center; margin: 4px 0; font-size: 13px; }
+.fg-gantt .g-track { position: relative; height: 18px; background: var(--soft); border-radius: 4px; }
+.fg-gantt .g-bar { position: absolute; top: 0; bottom: 0; background: color-mix(in srgb, var(--accent) 35%, transparent); border-radius: 4px; overflow: hidden; }
+.fg-gantt .g-bar i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--accent); }
+.fg-gantt .g-bar.late { background: color-mix(in srgb, var(--bad) 35%, transparent); }
+.fg-gantt .g-bar.late i { background: var(--bad); }
+.fg-gantt .g-today { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--brand); }
+.fg-gantt .g-ms { position: absolute; top: 2px; width: 14px; height: 14px; transform: translateX(-7px) rotate(45deg); background: var(--warn); }
+@media (max-width: 600px) { .fg-cal .fg-ev .t { display: none; } .fg-cal .d { min-height: 64px; padding: 2px; } }

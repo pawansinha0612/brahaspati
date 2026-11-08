@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Affiliate Content Manager — Brahaspati</title>
+  <meta name="description" content="Free affiliate link tracker for creators and bloggers: programs, links with UTM tags, where each link is used, monthly clicks and commissions, EPC, unpaid commission, recheck reminders and disclosure text. Data stays in your browser.">
+  <link rel="stylesheet" href="../../assets/style.css">
+  <style>
+    .form-grid { display: grid; gap: 0 14px; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
+    .form-grid .full { grid-column: 1 / -1; }
+    .check { display: flex; gap: 6px; align-items: center; font-weight: 400; margin: 4px 0; }
+    .multi { display: grid; gap: 2px 14px; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); max-height: 220px; overflow: auto; border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; }
+    td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .edit-table input, .edit-table select { padding: 5px 6px; font-size: 14px; min-width: 70px; }
+    .edit-table td { vertical-align: middle; padding: 4px 6px; }
+    .url { font-family: var(--mono); font-size: 12px; overflow-wrap: anywhere; }
+    .file pre { max-height: 300px; white-space: pre; }
+    .file .path { font-family: var(--mono); font-size: 14px; font-weight: 700; overflow-wrap: anywhere; }
+    code { background: var(--code); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+    pre code { background: none; padding: 0; }
+    .rem { border-left: 4px solid var(--line); padding: 4px 10px; margin: 6px 0; }
+    .rem.bad { border-color: var(--bad); } .rem.warn { border-color: var(--warn); } .rem.info { border-color: var(--accent); }
+    .actions { white-space: nowrap; }
+  </style>
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <p class="eyebrow">Sellers · affiliates</p>
+    <h1>Affiliate Content Manager</h1>
+    <p class="lead">Keep every affiliate program, link and post in one place. See which links and which content actually earn, how much commission is still unpaid, which links need rechecking, and copy the right disclosure every time.</p>
+    <div class="row no-print"><button class="btn primary" id="sample" type="button">Load sample data</button></div>
+    <p class="privacy">Everything is saved in this browser only. Enter all commissions in one currency (your payout currency) so the totals add up.</p>
+  </section>
+
+  <div class="tabs" data-tabs="aff">
+    <button data-tab="overview">Overview</button>
+    <button data-tab="programs">Programs</button>
+    <button data-tab="links">Links</button>
+    <button data-tab="content">Content</button>
+    <button data-tab="earnings">Clicks &amp; earnings</button>
+    <button data-tab="disclosure">Disclosure</button>
+    <button data-tab="checker">Link checker</button>
+    <button data-tab="settings">Settings</button>
+  </div>
+
+  <section class="tab-panel" data-panel="overview">
+    <div class="row" style="margin-top:14px"><label for="range" style="margin:0">Period</label><select id="range" style="max-width:220px"><option value="3">Last 3 months</option><option value="12" selected>Last 12 months</option><option value="all">All time</option></select></div>
+    <div id="overview"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="programs"><div id="programs"></div></section>
+  <section class="tab-panel" data-panel="links"><div id="links"></div></section>
+  <section class="tab-panel" data-panel="content"><div id="content"></div></section>
+
+  <section class="tab-panel" data-panel="earnings">
+    <div class="panel">
+      <div class="row"><label for="emonth" style="margin:0">Month</label><input type="month" id="emonth" style="max-width:180px">
+        <button class="btn small" type="button" id="ePrev">◀</button><button class="btn small" type="button" id="eNext">▶</button></div>
+      <p class="small muted">Copy the numbers from each network’s report, per link. Changes save straight away.</p>
+      <div id="egrid"></div>
+    </div>
+    <div class="panel">
+      <h3 style="margin-top:0">Import a CSV report</h3>
+      <p class="small muted" style="margin-top:-4px">Columns (any order, extra columns ignored): <code>link</code> (your short name, the affiliate URL or the product), <code>month</code> or <code>date</code>, <code>clicks</code>, <code>conversions</code> or <code>orders</code>, <code>sales</code> or <code>revenue</code>, <code>commission</code> or <code>earnings</code>, <code>status</code> (pending / approved / paid / rejected). A row for a link and month you already have replaces it.</p>
+      <div class="drop" id="eDrop">Drop a CSV / Excel file here, or click to choose</div>
+      <div class="row" style="margin-top:8px"><button class="btn small" type="button" id="eTemplate">Download template</button><button class="btn small" type="button" id="eExport">Download all earnings CSV</button></div>
+    </div>
+  </section>
+
+  <section class="tab-panel" data-panel="disclosure">
+    <div class="panel">
+      <p style="margin-top:0">In Australia the ACCC expects you to clearly disclose paid or affiliate relationships (misleading conduct under the Australian Consumer Law); the US FTC and UK ASA have similar rules. Put the disclosure <strong>before</strong> the first link, in plain words — not hidden at the bottom or only in a hashtag cloud.</p>
+      <div class="row"><label for="dtype" style="margin:0">For a</label><select id="dtype" style="max-width:200px"><option value="post">Blog post</option><option value="video">Video description</option><option value="email">Email / newsletter</option><option value="social">Social post</option><option value="short">Next to a single link</option></select></div>
+      <textarea id="dtext" class="prose" style="min-height:90px;margin-top:8px"></textarea>
+      <div class="row" style="margin-top:8px"><button class="btn" type="button" id="dcopy">Copy</button></div>
+      <p class="small muted">This is general guidance, not legal advice. Amazon Associates also requires the exact sentence “As an Amazon Associate I earn from qualifying purchases.” — check each program’s terms.</p>
+    </div>
+  </section>
+
+  <section class="tab-panel" data-panel="checker">
+    <div class="panel">
+      <h2 style="margin-top:0">Check your links automatically (optional)</h2>
+      <p>This page can’t open your affiliate links to see if they still work — browsers block reading other websites. Instead, you can let GitHub do it free every week: it follows each link and opens an issue (which emails you) when a link errors, or lands on the shop’s home page instead of the product.</p>
+      <ol class="small">
+        <li>Create a free <strong>private</strong> repository on <a href="https://github.com/new" target="_blank" rel="noopener">github.com</a> (tick “Add a README”).</li>
+        <li><strong>Add file → Create new file</strong>: <code>.github/workflows/link-check.yml</code> — paste the workflow. Commit.</li>
+        <li>Create <code>links/check-links.js</code> and <code>links/links.json</code> the same way.</li>
+        <li><strong>Settings → Actions → General → Workflow permissions</strong>: choose <strong>Read and write</strong>, Save. Then <strong>Actions → Affiliate link check → Run workflow</strong>.</li>
+        <li>When you add links here, copy a fresh <code>links.json</code> to GitHub. After a check, mark links as checked on the Links tab.</li>
+      </ol>
+      <div class="tabs" data-tabs="cfiles"><button data-tab="cwf">Workflow</button><button data-tab="cjs">check-links.js</button><button data-tab="cjson">links.json</button></div>
+      <section class="tab-panel file" data-panel="cwf"></section>
+      <section class="tab-panel file" data-panel="cjs"></section>
+      <section class="tab-panel file" data-panel="cjson"></section>
+    </div>
+  </section>
+
+  <section class="tab-panel" data-panel="settings">
+    <div class="panel">
+      <div class="form-grid"><div><label for="recheckDays">Remind me to recheck links every (days)</label><input type="number" id="recheckDays" min="7" max="365" step="1"></div></div>
+      <div class="row" style="margin-top:12px"><button class="btn" type="button" id="ics">Add a monthly “recheck links” reminder to my calendar (.ics)</button></div>
+    </div>
+    <div class="row"><button class="btn" id="backup" type="button">Download backup</button><button class="btn" id="restore" type="button">Restore backup</button><button class="btn" id="expLinks" type="button">Download links CSV</button><button class="btn" id="clearAll" type="button">Delete all data</button></div>
+  </section>
+</main>
+<script src="../../assets/core.js"></script>
+<script src="./lib.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

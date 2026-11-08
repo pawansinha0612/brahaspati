@@ -1,25 +1,371 @@
 [
-  {"slug":"csv-intelligence","name":"Excel & CSV Intelligence","cat":"business","desc":"Compare two spreadsheets, find missing and duplicate records, reconcile invoices against payments, validate data and download a reconciliation report."},
-  {"slug":"business-admin","name":"Small Business Admin","cat":"business","desc":"Quotes, invoices, customers, payment reminders and expenses in one place, with monthly reports and printable documents."},
-  {"slug":"site-health","name":"Website Health Checker","cat":"business","desc":"Score any public website for speed, accessibility, SEO and best practice, see what to fix first and download a report."},
-  {"slug":"creator-autopilot","name":"Creator Autopilot","cat":"creators","desc":"Plan a series: story ideas, consistent characters, scene breakdowns, image and video prompts, captions, hashtags and a publishing calendar."},
-  {"slug":"content-insights","name":"Content Insights","cat":"creators","desc":"Import Facebook or YouTube analytics CSVs to see which hooks, lengths and topics work, and what to post next."},
-  {"slug":"story-studio","name":"AI Story Studio","cat":"creators","desc":"Character library, continuity checker, scene-by-scene prompts, dialogue, Hindi-to-English lines, hooks and endings, exported for each AI video tool."},
-  {"slug":"video-editor","name":"Video Editor","cat":"creators","desc":"Trim, caption and export short videos in your browser.","url":"https://pawansinha.com.au/projects/video-editor/"},
-  {"slug":"finance","name":"Money Command Centre","cat":"personal","desc":"Import bank statement CSVs, auto-categorise spending, set budgets, spot subscriptions and track savings goals."},
-  {"slug":"job-copilot","name":"Job Application Copilot","cat":"personal","desc":"Track applications, match your resume to a job ad, find skill gaps, prepare interview questions and keep feedback and salary notes."},
-  {"slug":"knowledge-brain","name":"Knowledge Brain","cat":"personal","desc":"Drop in PDFs, Word, Excel and notes. Search across them, ask questions, get summaries — privately, with an optional in-browser AI."},
-  {"slug":"automation-hub","name":"Automation Hub","cat":"personal","desc":"Bulk-rename files, sort a folder by type and date, find duplicate files and run CSV clean-up recipes on your own computer."},
-  {"slug":"english-practice","name":"Everyday English","cat":"personal","desc":"Daily conversation practice, Australian expressions, speaking and listening drills, grammar checks, role-plays and progress tracking."},
-  {"slug":"file-converter","name":"File Converter","cat":"utilities","desc":"Convert between CSV, Excel, JSON, Markdown and HTML tables, pull text out of PDF and Word files."},
-  {"slug":"pdf-tools","name":"PDF Intelligence","cat":"utilities","desc":"Extract text and tables from PDFs, compare two PDFs, and get a quick summary of long documents."},
-  {"slug":"screenshot-reader","name":"Screenshot Reader","cat":"utilities","desc":"Read the text in a screenshot, spot error messages and stack traces, and summarise what it shows."},
-  {"slug":"regex-builder","name":"Regex Builder","cat":"utilities","desc":"Describe what to match in plain English and get a regular expression, explained piece by piece and tested live."},
-  {"slug":"sql-assistant","name":"SQL Assistant","cat":"utilities","desc":"Format SQL, explain what a query does in plain English and flag slow or risky patterns."},
-  {"slug":"meeting-minutes","name":"Meeting Minutes","cat":"utilities","desc":"Paste a transcript and get decisions, action items with owners and dates, open questions and a ready-to-send summary."},
-  {"slug":"email-assistant","name":"Email Assistant","cat":"utilities","desc":"Sort a pile of emails by what they need, draft polite replies from templates, and fix tone."},
-  {"slug":"page-monitor","name":"Website Change Monitor","cat":"utilities","desc":"Free GitHub Actions setup that screenshots your pages every day and tells you when something changes."},
-  {"slug":"json-diff","name":"JSON & API Response Diff","cat":"utilities","desc":"Compare two JSON files or API responses and see exactly what changed.","url":"https://pawansinha.com.au/tools/json-diff/"},
-  {"slug":"test-data","name":"Test Data Generator","cat":"utilities","desc":"Generate realistic fake people, addresses, orders and more as CSV, JSON or SQL.","url":"https://pawansinha.com.au/tools/test-data/"},
-  {"slug":"log-analyser","name":"Log Analyser","cat":"utilities","desc":"Drop in an application log to group errors, find spikes and see the first failure.","url":"https://pawansinha.com.au/tools/log-analyser/"}
+  {
+    "slug": "csv-intelligence",
+    "name": "Excel & CSV Intelligence",
+    "cat": "business",
+    "desc": "Compare two spreadsheets, find missing and duplicate records, reconcile invoices against payments, validate data and download a reconciliation report."
+  },
+  {
+    "slug": "business-admin",
+    "name": "Small Business Admin",
+    "cat": "business",
+    "desc": "Quotes, invoices, customers, payment reminders and expenses in one place, with monthly reports and printable documents."
+  },
+  {
+    "slug": "site-health",
+    "name": "Website Health Checker",
+    "cat": "business",
+    "desc": "Score any public website for speed, accessibility, SEO and best practice, see what to fix first and download a report."
+  },
+  {
+    "slug": "decision-simulator",
+    "name": "Decision Simulator",
+    "cat": "business",
+    "desc": "Compare options for a business decision — costs, benefits, risks and uncertainty — with a simulation of likely outcomes."
+  },
+  {
+    "slug": "contract-scanner",
+    "name": "Contract Risk Scanner",
+    "cat": "business",
+    "desc": "Upload a contract to spot auto-renewals, notice periods, payment terms, liability and missing clauses. Not legal advice."
+  },
+  {
+    "slug": "proposal-generator",
+    "name": "Proposal Generator",
+    "cat": "business",
+    "desc": "Turn a client's requirements into a proposal with scope, deliverables, timeline and pricing options."
+  },
+  {
+    "slug": "process-mapper",
+    "name": "Business Process Mapper",
+    "cat": "business",
+    "desc": "Write or paste the steps of a workflow and get a process diagram and a step-by-step SOP."
+  },
+  {
+    "slug": "compliance-calendar",
+    "name": "Compliance Calendar",
+    "cat": "business",
+    "desc": "Track BAS, PAYG, super, insurance, licences and other deadlines, with reminders for your calendar."
+  },
+  {
+    "slug": "vendor-compare",
+    "name": "Vendor Comparison",
+    "cat": "business",
+    "desc": "Compare supplier quotes side by side with weighted scores for price, terms and service."
+  },
+  {
+    "slug": "onboarding",
+    "name": "Employee Onboarding",
+    "cat": "business",
+    "desc": "Induction checklists, documents, training and sign-offs for every new starter."
+  },
+  {
+    "slug": "continuity-planner",
+    "name": "Business Continuity Planner",
+    "cat": "business",
+    "desc": "Answer guided questions and get a business continuity and disaster recovery plan."
+  },
+  {
+    "slug": "tender-assistant",
+    "name": "Tender Response Assistant",
+    "cat": "business",
+    "desc": "Pull every requirement out of a tender, build a compliance matrix and draft responses."
+  },
+  {
+    "slug": "feedback-miner",
+    "name": "Review & Feedback Miner",
+    "cat": "business",
+    "desc": "Find recurring complaints, praise and product improvement ideas in customer reviews and feedback."
+  },
+  {
+    "slug": "inventory-forecast",
+    "name": "Inventory Forecasting",
+    "cat": "business",
+    "desc": "Forecast stock needs from past sales, with reorder points and safety stock."
+  },
+  {
+    "slug": "no-show-predictor",
+    "name": "Appointment No-show Predictor",
+    "cat": "business",
+    "desc": "Find which appointments are likely to be missed and when to send extra reminders."
+  },
+  {
+    "slug": "property-inspection",
+    "name": "Property Inspection Assistant",
+    "cat": "industry",
+    "desc": "Room-by-room inspections with photos and ratings, turned into reports, maintenance lists and follow-ups."
+  },
+  {
+    "slug": "construction-tracker",
+    "name": "Construction Project Tracker",
+    "cat": "industry",
+    "desc": "Jobs, contractors, materials, delays, budgets and site progress for small builders."
+  },
+  {
+    "slug": "tradie-manager",
+    "name": "Tradie Business Manager",
+    "cat": "industry",
+    "desc": "Scheduling, quotes, job photos, customers and invoices for electricians, plumbers and other trades."
+  },
+  {
+    "slug": "pet-business",
+    "name": "Pet Business Manager",
+    "cat": "industry",
+    "desc": "Pet profiles, vaccinations, grooming and walking bookings, and customer history."
+  },
+  {
+    "slug": "restaurant-profit",
+    "name": "Restaurant Profit Calculator",
+    "cat": "industry",
+    "desc": "Recipe costs, wastage, menu profitability and the effect of supplier price changes."
+  },
+  {
+    "slug": "cleaning-os",
+    "name": "Cleaning Business OS",
+    "cat": "industry",
+    "desc": "Recurring jobs, cleaner rosters, site checklists and completion tracking."
+  },
+  {
+    "slug": "logistics-tower",
+    "name": "Logistics Control Tower",
+    "cat": "industry",
+    "desc": "Deliveries, drivers, shipment documents and exceptions for small transport operators."
+  },
+  {
+    "slug": "gym-manager",
+    "name": "Gym & Studio Manager",
+    "cat": "industry",
+    "desc": "Memberships, class bookings, attendance, trainer schedules and renewal reminders."
+  },
+  {
+    "slug": "returns-intelligence",
+    "name": "Returns Intelligence",
+    "cat": "ecommerce",
+    "desc": "Find out why customers send products back, which items cost you most, and what to fix."
+  },
+  {
+    "slug": "listing-optimiser",
+    "name": "Product Listing Optimiser",
+    "cat": "ecommerce",
+    "desc": "Write and check marketplace listings for Amazon, eBay, Etsy and Shopify: titles, bullets and keywords."
+  },
+  {
+    "slug": "price-watcher",
+    "name": "Competitor Price Watcher",
+    "cat": "ecommerce",
+    "desc": "Set up a free daily price tracker for public product pages and analyse price changes."
+  },
+  {
+    "slug": "store-builder",
+    "name": "Digital Product Store",
+    "cat": "ecommerce",
+    "desc": "Build a simple storefront page for templates, guides and downloads, using your own payment links."
+  },
+  {
+    "slug": "affiliate-manager",
+    "name": "Affiliate Content Manager",
+    "cat": "ecommerce",
+    "desc": "Track affiliate links, where you used them, clicks and commissions."
+  },
+  {
+    "slug": "creator-autopilot",
+    "name": "Creator Autopilot",
+    "cat": "creators",
+    "desc": "Plan a series: story ideas, consistent characters, scene breakdowns, image and video prompts, captions, hashtags and a publishing calendar."
+  },
+  {
+    "slug": "content-insights",
+    "name": "Content Insights",
+    "cat": "creators",
+    "desc": "Import Facebook or YouTube analytics CSVs to see which hooks, lengths and topics work, and what to post next."
+  },
+  {
+    "slug": "story-studio",
+    "name": "AI Story Studio",
+    "cat": "creators",
+    "desc": "Character library, continuity checker, scene-by-scene prompts, dialogue, Hindi-to-English lines, hooks and endings, exported for each AI video tool."
+  },
+  {
+    "slug": "video-editor",
+    "name": "Video Editor",
+    "cat": "creators",
+    "desc": "Trim, caption and export short videos in your browser.",
+    "url": "https://pawansinha.com.au/projects/video-editor/"
+  },
+  {
+    "slug": "finance",
+    "name": "Money Command Centre",
+    "cat": "personal",
+    "desc": "Import bank statement CSVs, auto-categorise spending, set budgets, spot subscriptions and track savings goals."
+  },
+  {
+    "slug": "job-copilot",
+    "name": "Job Application Copilot",
+    "cat": "personal",
+    "desc": "Track applications, match your resume to a job ad, find skill gaps, prepare interview questions and keep feedback and salary notes."
+  },
+  {
+    "slug": "knowledge-brain",
+    "name": "Knowledge Brain",
+    "cat": "personal",
+    "desc": "Drop in PDFs, Word, Excel and notes. Search across them, ask questions, get summaries — privately, with an optional in-browser AI."
+  },
+  {
+    "slug": "automation-hub",
+    "name": "Automation Hub",
+    "cat": "personal",
+    "desc": "Bulk-rename files, sort a folder by type and date, find duplicate files and run CSV clean-up recipes on your own computer."
+  },
+  {
+    "slug": "english-practice",
+    "name": "Everyday English",
+    "cat": "personal",
+    "desc": "Daily conversation practice, Australian expressions, speaking and listening drills, grammar checks, role-plays and progress tracking."
+  },
+  {
+    "slug": "home-inventory",
+    "name": "Home Inventory Vault",
+    "cat": "personal",
+    "desc": "Photos, receipts, warranties, serial numbers and purchase dates for everything you own."
+  },
+  {
+    "slug": "family-timeline",
+    "name": "Family Memory Timeline",
+    "cat": "personal",
+    "desc": "A private timeline of photos, milestones, voice notes and stories, kept on your device."
+  },
+  {
+    "slug": "trip-planner",
+    "name": "Smart Trip Planner",
+    "cat": "personal",
+    "desc": "Plan family trips by budget, transport, time and kid-friendly activities, day by day."
+  },
+  {
+    "slug": "subscription-detector",
+    "name": "Subscription Leak Detector",
+    "cat": "personal",
+    "desc": "Import bank statements and find forgotten subscriptions and repeat charges."
+  },
+  {
+    "slug": "life-admin",
+    "name": "Life Admin Vault",
+    "cat": "personal",
+    "desc": "Passports, visas, licences, insurance and certificates with expiry reminders."
+  },
+  {
+    "slug": "file-converter",
+    "name": "File Converter",
+    "cat": "utilities",
+    "desc": "Convert between CSV, Excel, JSON, Markdown and HTML tables, pull text out of PDF and Word files."
+  },
+  {
+    "slug": "pdf-tools",
+    "name": "PDF Intelligence",
+    "cat": "utilities",
+    "desc": "Extract text and tables from PDFs, compare two PDFs, and get a quick summary of long documents."
+  },
+  {
+    "slug": "screenshot-reader",
+    "name": "Screenshot Reader",
+    "cat": "utilities",
+    "desc": "Read the text in a screenshot, spot error messages and stack traces, and summarise what it shows."
+  },
+  {
+    "slug": "meeting-minutes",
+    "name": "Meeting Minutes & Decision Tracker",
+    "cat": "utilities",
+    "desc": "Turn transcripts into decisions and action items, then track owners, deadlines and what got done across meetings."
+  },
+  {
+    "slug": "email-assistant",
+    "name": "Inbox Intelligence",
+    "cat": "utilities",
+    "desc": "Sort emails by what they need, spot promises you made and questions nobody answered, set follow-ups and draft replies."
+  },
+  {
+    "slug": "knowledge-graph",
+    "name": "Knowledge Graph Builder",
+    "cat": "utilities",
+    "desc": "Drop in documents and see the people, projects and topics they mention and how they connect."
+  },
+  {
+    "slug": "regex-builder",
+    "name": "Regex Builder",
+    "cat": "developers",
+    "desc": "Describe what to match in plain English and get a regular expression, explained piece by piece and tested live."
+  },
+  {
+    "slug": "sql-assistant",
+    "name": "SQL Assistant",
+    "cat": "developers",
+    "desc": "Format SQL, explain what a query does in plain English and flag slow or risky patterns."
+  },
+  {
+    "slug": "page-monitor",
+    "name": "Website Change Monitor",
+    "cat": "developers",
+    "desc": "Free GitHub Actions setup that screenshots your pages every day and tells you when something changes."
+  },
+  {
+    "slug": "json-diff",
+    "name": "JSON & API Response Diff",
+    "cat": "developers",
+    "desc": "Compare two JSON files or API responses and see exactly what changed.",
+    "url": "https://pawansinha.com.au/tools/json-diff/"
+  },
+  {
+    "slug": "test-data",
+    "name": "Test Data Generator",
+    "cat": "developers",
+    "desc": "Generate realistic fake people, addresses, orders and more as CSV, JSON or SQL.",
+    "url": "https://pawansinha.com.au/tools/test-data/"
+  },
+  {
+    "slug": "log-analyser",
+    "name": "Log Analyser",
+    "cat": "developers",
+    "desc": "Drop in an application log to group errors, find spikes and see the first failure.",
+    "url": "https://pawansinha.com.au/tools/log-analyser/"
+  },
+  {
+    "slug": "architecture-diagram",
+    "name": "Architecture Diagram Generator",
+    "cat": "developers",
+    "desc": "Describe a system or paste a docker-compose or folder tree and get an editable architecture diagram."
+  },
+  {
+    "slug": "trace-explainer",
+    "name": "Distributed Trace Explainer",
+    "cat": "developers",
+    "desc": "Find slow services and bottlenecks in Jaeger, Zipkin or OpenTelemetry traces.",
+    "url": "https://pawansinha.com.au/tools/trace-explainer/"
+  },
+  {
+    "slug": "db-performance-lab",
+    "name": "Database Performance Lab",
+    "cat": "developers",
+    "desc": "Read SQL execution plans, find the expensive steps and get index and query fixes.",
+    "url": "https://pawansinha.com.au/tools/db-performance-lab/"
+  },
+  {
+    "slug": "test-coverage",
+    "name": "Test Coverage Intelligence",
+    "cat": "developers",
+    "desc": "Combine coverage, test results and requirements to see untested areas and release risk.",
+    "url": "https://pawansinha.com.au/tools/test-coverage/"
+  },
+  {
+    "slug": "visual-regression",
+    "name": "Visual Regression Checker",
+    "cat": "developers",
+    "desc": "Compare screenshots between builds and get pixel-level difference reports.",
+    "url": "https://pawansinha.com.au/tools/visual-regression/"
+  },
+  {
+    "slug": "dependency-risk",
+    "name": "Dependency Risk Monitor",
+    "cat": "developers",
+    "desc": "Scan package files for outdated and vulnerable dependencies and get an upgrade plan.",
+    "url": "https://pawansinha.com.au/tools/dependency-risk/"
+  }
 ]

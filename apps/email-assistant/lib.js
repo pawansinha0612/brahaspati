@@ -251,6 +251,223 @@
     return 'mailto:' + encodeURIComponent(to || '').replace(/%40/g, '@').replace(/%2C/gi, ',') + '?subject=' + encodeURIComponent(subject || '') + '&body=' + encodeURIComponent(body || '');
   }
 
-  var L = { split: split, classify: classify, extract: extract, prioritise: prioritise, TEMPLATES: TEMPLATES, FIELD_LABELS: FIELD_LABELS, PHRASES: PHRASES, fill: fill, suggestTemplates: suggestTemplates, toneCheck: toneCheck, soften: soften, subjectSuggestions: subjectSuggestions, mailto: mailto, CATS: CATS };
+  // =====================================================================
+  // Inbox Intelligence: threads, promises, unanswered questions, follow-ups
+  // =====================================================================
+  var MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+  var DAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  function isoOf(d) { return d.getUTCFullYear() + '-' + pad(d.getUTCMonth() + 1) + '-' + pad(d.getUTCDate()); }
+  function fromIso(s) { var m = String(s || '').match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? new Date(Date.UTC(+m[1], m[2] - 1, +m[3])) : null; }
+  function addDays(d, n) { return new Date(d.getTime() + n * 86400000); }
+  function addBusinessDays(iso, n) { var d = fromIso(iso); while (n > 0) { d = addDays(d, 1); if (d.getUTCDay() !== 0 && d.getUTCDay() !== 6) n--; } return isoOf(d); }
+
+  // "Mon, 3 Nov 2026 09:12", "3/11/2026", "2026-11-03T09:12", "November 3, 2026 9:12 AM" -> {date:'2026-11-03', time:'09:12', ts}
+  function parseDate(s) {
+    s = String(s || '').trim(); if (!s) return null; var m, y, mo, d, t = '';
+    if ((m = s.match(/(\d{4})-(\d{2})-(\d{2})/))) { y = +m[1]; mo = +m[2] - 1; d = +m[3]; }
+    else if ((m = s.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{2,4})\b/))) { y = +m[3] < 100 ? 2000 + +m[3] : +m[3]; mo = +m[2] - 1; d = +m[1]; }
+    else if ((m = s.match(/\b(\d{1,2})(?:st|nd|rd|th)?\s+([a-z]{3})[a-z]*\.?,?\s+(\d{4})/i))) { y = +m[3]; mo = MONTHS.indexOf(m[2].toLowerCase()); d = +m[1]; }
+    else if ((m = s.match(/\b([a-z]{3})[a-z]*\.?\s+(\d{1,2})(?:st|nd|rd|th)?,?\s+(\d{4})/i))) { y = +m[3]; mo = MONTHS.indexOf(m[1].toLowerCase()); d = +m[2]; }
+    if (y == null || mo < 0 || !(d >= 1 && d <= 31)) return null;
+    var tm = s.match(/\b(\d{1,2}):(\d{2})(?::\d{2})?\s*([ap]\.?m\.?)?/i);
+    if (tm) { var h = +tm[1] % (tm[3] ? 12 : 24) + (tm[3] && /p/i.test(tm[3]) ? 12 : 0); t = pad(h) + ':' + tm[2]; }
+    var date = y + '-' + pad(mo + 1) + '-' + pad(d);
+    return { date: date, time: t, ts: Date.UTC(y, mo, d) + (t ? (+t.slice(0, 2) * 60 + +t.slice(3)) * 60000 : 0) };
+  }
+
+  // Relative phrases ("by Friday", "tomorrow", "next week", "end of month", "in 3 days", "12/11", "14 Nov") -> {date, phrase}
+  function resolveDate(text, baseIso) {
+    var base = fromIso(baseIso) || fromIso(new Date().toISOString().slice(0, 10)), s = ' ' + String(text || '').toLowerCase() + ' ', m;
+    function r(d, p) { return { date: isoOf(d), phrase: p.trim() }; }
+    function nextDow(d, dow) { var diff = (dow - d.getUTCDay() + 7) % 7; return addDays(d, diff === 0 ? 7 : diff); }
+    function dayIdx(w) { w = w.slice(0, 3); for (var i = 0; i < 7; i++) if (DAYS[i].slice(0, 3) === w) return i; return -1; }
+    if ((m = s.match(/\b(\d{1,2})[\/.](\d{1,2})(?:[\/.](\d{2,4}))?\b/)) && +m[2] >= 1 && +m[2] <= 12 && +m[1] >= 1 && +m[1] <= 31) {
+      var y = m[3] ? (+m[3] < 100 ? 2000 + +m[3] : +m[3]) : base.getUTCFullYear(), dt = new Date(Date.UTC(y, m[2] - 1, +m[1]));
+      if (!m[3] && dt < base) dt = new Date(Date.UTC(y + 1, m[2] - 1, +m[1])); return r(dt, m[0]);
+    }
+    var mon = '(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)';
+    function md(day, mo, p) { var mi = MONTHS.indexOf(mo.slice(0, 3)), d = new Date(Date.UTC(base.getUTCFullYear(), mi, day)); if (d < base) d = new Date(Date.UTC(base.getUTCFullYear() + 1, mi, day)); return r(d, p); }
+    if ((m = s.match(new RegExp('\\b(\\d{1,2})(?:st|nd|rd|th)?\\s+(?:of\\s+)?' + mon + '\\b')))) return md(+m[1], m[2], m[0]);
+    if ((m = s.match(new RegExp('\\b' + mon + '\\s+(\\d{1,2})(?:st|nd|rd|th)?\\b')))) return md(+m[2], m[1], m[0]);
+    if ((m = s.match(/\b(eod|end of (?:the )?day|cob|close of business|today|tonight|this afternoon|this arvo|asap|shortly|in an hour|this morning)\b/))) return r(base, m[1]);
+    if ((m = s.match(/\b(tomorrow|tmrw|tmr)\b/))) return r(addDays(base, 1), m[1]);
+    if ((m = s.match(/\bin (\d+|a|one|two|three|four|a couple of) (business day|working day|day|week)s?\b/))) {
+      var n = { a: 1, one: 1, two: 2, three: 3, four: 4, 'a couple of': 2 }[m[1]] || +m[1];
+      return /business|working/.test(m[2]) ? { date: addBusinessDays(isoOf(base), n), phrase: m[0].trim() } : r(addDays(base, n * (m[2] === 'week' ? 7 : 1)), m[0]);
+    }
+    if ((m = s.match(/\bnext (monday|tuesday|wednesday|thursday|friday|mon|tue|tues|wed|thu|thur|thurs|fri)\b/))) { var di = dayIdx(m[1]); var mon0 = addDays(base, -((base.getUTCDay() + 6) % 7)); return r(addDays(mon0, 7 + (di + 6) % 7), m[0]); }
+    if ((m = s.match(/\b(?:by|on|before|this|until|due|come)\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tues?|wed|thu(?:rs?)?|fri)\b/)) || (m = s.match(/\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/))) return r(nextDow(base, dayIdx(m[1])), m[0]);
+    if ((m = s.match(/\b(end of (?:the |this )?week|eow|by the weekend|later this week)\b/))) return r(base.getUTCDay() === 5 ? base : nextDow(base, 5), m[1]);
+    if ((m = s.match(/\b(early next week|next week)\b/))) { var mon1 = addDays(base, 7 - ((base.getUTCDay() + 6) % 7)); return r(m[1] === 'next week' ? addDays(mon1, 4) : addDays(mon1, 1), m[1]); }
+    if ((m = s.match(/\b(end of (?:the |this )?month|eom)\b/))) return r(new Date(Date.UTC(base.getUTCFullYear(), base.getUTCMonth() + 1, 0)), m[1]);
+    if ((m = s.match(/\b(next month)\b/))) return r(new Date(Date.UTC(base.getUTCFullYear(), base.getUTCMonth() + 2, 0)), m[1]);
+    return null;
+  }
+
+  function normaliseSubject(s) {
+    var t = String(s || '').trim(), prev;
+    do { prev = t; t = t.replace(/^\s*(?:re|fw|fwd|aw|sv|tr|antw|wg)\s*(?:\[\d+\])?\s*:\s*/i, '').replace(/^\s*\[[^\]]{1,30}\]\s*/, ''); } while (t !== prev);
+    return t.replace(/\s+/g, ' ').trim().toLowerCase();
+  }
+  function addresses(s) { return (String(s || '').match(/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g) || []).map(function (x) { return x.toLowerCase(); }); }
+  // me: "alex@shop.com, Alex Chen" -> {emails, names}
+  function parseMe(me) {
+    if (me && typeof me === 'object') return me;
+    var out = { emails: [], names: [] };
+    String(me || '').split(/[,;\n]/).map(function (x) { return x.trim(); }).filter(Boolean).forEach(function (x) { if (/@/.test(x)) out.emails = out.emails.concat(addresses(x)); else out.names.push(x.toLowerCase()); });
+    return out;
+  }
+  function isMe(e, me) {
+    me = parseMe(me);
+    if (e.fromEmail && me.emails.indexOf(e.fromEmail.toLowerCase()) >= 0) return true;
+    var n = (e.fromName || '').toLowerCase();
+    return !!n && me.names.some(function (x) { return x === n || n.split(' ')[0] === x; });
+  }
+  // Most common "To:" address that never appears as a sender -> probably you
+  function guessMe(emails) {
+    var c = {}, from = {};
+    emails.forEach(function (e) { if (e.fromEmail) from[e.fromEmail.toLowerCase()] = 1; addresses(e.to).forEach(function (a) { c[a] = (c[a] || 0) + 1; }); });
+    var best = Object.keys(c).sort(function (a, b) { return c[b] - c[a]; })[0];
+    return best && c[best] >= 2 ? best : (best || '');
+  }
+
+  // Group emails into conversations by subject (Re:/Fwd: removed) and shared people
+  function threads(emails) {
+    var groups = [], bySubj = {};
+    emails.forEach(function (e, i) {
+      var key = normaliseSubject(e.subject), people = [e.fromEmail || e.fromName].concat(addresses(e.to)).filter(Boolean).map(function (x) { return String(x).toLowerCase(); });
+      var g = key && bySubj[key] ? bySubj[key].filter(function (t) { return t.people.some(function (p) { return people.indexOf(p) >= 0; }) || !people.length; })[0] || (bySubj[key].length === 1 && /^(re|fw|fwd)\s*:/i.test(e.subject) ? bySubj[key][0] : null) : null;
+      if (!g) { g = { id: 't' + groups.length, subject: e.subject ? e.subject.replace(/^\s*((re|fw|fwd)\s*:\s*)+/i, '') : '(no subject)', key: key, items: [], people: [] }; groups.push(g); if (key) (bySubj[key] = bySubj[key] || []).push(g); }
+      g.items.push(i); people.forEach(function (p) { if (g.people.indexOf(p) < 0) g.people.push(p); });
+    });
+    groups.forEach(function (g) {
+      var dated = g.items.every(function (i) { return parseDate(emails[i].date); });
+      if (dated) g.items.sort(function (a, b) { return parseDate(emails[a].date).ts - parseDate(emails[b].date).ts || a - b; });
+      g.last = g.items[g.items.length - 1];
+    });
+    return groups;
+  }
+
+  var PROMISE = /\b(?:I(?:'ll|’ll| will| shall| am going to|'m going to|’m going to| can| should be able to)|we(?:'ll|’ll| will| are going to|'re going to)) (?:(?:also|then|just|definitely|try to|make sure to|aim to|be able to) )*(send|get|check|call|follow|look|review|confirm|share|update|book|organi[sz]e|arrange|sort|chase|fix|pay|deliver|draft|prepare|let you know|come back|reply|respond|circle back|have|finish|forward|set up|put together|make|do|email|ring|ship|provide|process|refund|investigate|find out|send through|loop|action|pick|drop|post|transfer|sign|approve|raise|lodge|submit)\b|\blet me (?:check|find out|look into|confirm|get back|see|ask|dig)\b|\b(?:I'll|I will|we'll|we will) (?:get|come) back to you\b|\bleave it with me\b|\bI'?m on it\b/i;
+  var NOT_PROMISE = /\b(?:I(?:'ll| will) (?:be honest|admit|say|be quick|be brief|be away|be out|be on leave)|I can see|I can hear|I can't|if (?:you|I) )\b/i;
+  var DONE = /\b(?:attached|here(?:'s| is| are)|please find|I(?:'ve| have) (?:now )?(?:sent|attached|done|completed|checked|booked|updated|shared|paid|fixed|confirmed|processed|forwarded|reviewed)|(?:all )?done|sorted|it'?s fixed|payment (?:has been )?(?:made|sent)|just sent)\b/i;
+  var RHETORICAL = /^(?:how are you|how(?:'s| is) (?:it going|things|your week)|hope (?:you|all|this)|you know\?|right\?|isn'?t it\?|any questions\?|does that make sense\?|make sense\?|thoughts\?)/i;
+  var QSTOP = /^(about|above|after|again|also|and|any|are|been|before|being|both|but|can|could|did|does|doing|done|each|for|from|get|got|had|has|have|how|into|its|just|let|like|more|most|much|need|not|now|off|once|only|other|our|out|over|please|same|should|some|such|than|that|the|their|them|then|there|these|they|this|those|through|too|under|until|very|was|were|what|when|where|which|while|who|whom|why|will|with|would|you|your|yours|know|think|want|sure|still|yet|thanks|thank|can't|don't|did|we're|i'm|it's|there's|that's|what's|is|it|do|we|me|my|an|a|of|to|in|on|at|or|be|by|so|if|up|as)$/i;
+  function words(s) { return String(s).toLowerCase().replace(/[^a-z0-9\s'-]/g, ' ').split(/\s+/).filter(function (w) { return w.length > 2 && !QSTOP.test(w); }).map(function (w) { return w.slice(0, 5); }); }
+  function bodySentences(b) { var out = []; String(b || '').split(/\n\s*\n|\n(?=\s*(?:[-*•]|\d+[.)])\s)/).forEach(function (p) { out = out.concat(sentences(p)); }); return out; }
+  function hash(s) { var h = 0; s = String(s); for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return (h >>> 0).toString(36); }
+  function who(e) { return e.fromName || e.fromEmail || 'Unknown sender'; }
+
+  // emails: from split(); me: "you@x.com, Your Name"; today: 'YYYY-MM-DD'
+  function intelligence(emails, me, today) {
+    me = parseMe(me); today = today || isoOf(new Date(Date.UTC(new Date().getFullYear(), new Date().getMonth(), new Date().getDate())));
+    var th = threads(emails), promises = [], questions = [], noReply = [], names = {};
+    emails.forEach(function (e) { if (e.fromEmail && e.fromName) names[e.fromEmail.toLowerCase()] = e.fromName; });
+    function to(e) { var a = addresses(e.to)[0]; return a ? names[a] || a : 'them'; }
+    function clean(s) { return s.replace(/^(?:[Hh]i|[Hh]ello|[Hh]ey|[Dd]ear|[Mm]orning|[Gg]'?day)(?:\s+[A-Z][\w'-]*)?\s*[,!]\s*|^(?:[Hh]i|[Hh]ello|[Hh]ey|[Dd]ear)\s+[A-Z][\w'-]*\s+/, '').replace(/^./, function (c) { return c.toUpperCase(); }); }
+    th.forEach(function (t) {
+      t.items.forEach(function (idx, pos) {
+        var e = emails[idx], mine = isMe(e, me), pd = parseDate(e.date), base = pd ? pd.date : today, later = t.items.slice(pos + 1).map(function (j) { return emails[j]; });
+        var from = who(e);
+        bodySentences(e.body).forEach(function (s) {
+          // promises
+          if (PROMISE.test(s) && !NOT_PROMISE.test(s) && !/\?$/.test(s)) {
+            var due = resolveDate(s, base), fulfilled = later.filter(function (l) { return (mine ? isMe(l, me) : (l.fromEmail || l.fromName) === (e.fromEmail || e.fromName)) && DONE.test(l.body); })[0];
+            promises.push({ id: 'p' + hash(t.key + '|' + from + '|' + s), mine: mine, person: mine ? to(e) : from, text: clean(s), due: due ? due.date : addBusinessDays(base, 2), dueText: due ? due.phrase : '', guessed: !due,
+              done: !!fulfilled, doneText: fulfilled ? (fulfilled.date || 'a later email') : '', thread: t.id, subject: t.subject, date: base, email: idx });
+          }
+          // questions
+          if (/\?$/.test(s) && !RHETORICAL.test(s) && s.split(/\s+/).length >= 3) {
+            var qw = words(s), replies = later.filter(function (l) { return mine ? !isMe(l, me) : ((l.fromEmail || l.fromName) !== (e.fromEmail || e.fromName)); });
+            var answered = replies.some(function (l) {
+              if (!qw.length) return true;
+              var lw = words(l.body), hit = qw.filter(function (w) { return lw.indexOf(w) >= 0; }).length;
+              return hit >= Math.min(2, qw.length) || hit >= 1 && qw.length <= 3;
+            });
+            if (!answered) questions.push({ id: 'q' + hash(t.key + '|' + from + '|' + s), mine: mine, person: mine ? to(e) : from, text: clean(s), replied: replies.length > 0, thread: t.id, subject: t.subject, date: base, due: mine ? addBusinessDays(base, 3) : addBusinessDays(base, 1), email: idx });
+          }
+        });
+      });
+      // you wrote last, asked for something, and nobody has replied
+      var last = emails[t.last];
+      if (isMe(last, me) && extract(last).asks.length && !questions.some(function (q) { return q.email === t.last && q.mine; })) {
+        var lb = (parseDate(last.date) || {}).date || today;
+        noReply.push({ id: 'n' + hash(t.key + '|' + last.body.slice(0, 80)), mine: true, person: to(last), text: clean(extract(last).asks[0]), thread: t.id, subject: t.subject, date: lb, due: addBusinessDays(lb, 3), email: t.last });
+      }
+    });
+    return { threads: th, promises: promises, questions: questions, noReply: noReply, me: me, today: today };
+  }
+
+  // Flatten into follow-up reminders; state = {id: {done:true, snooze:'YYYY-MM-DD', due:'YYYY-MM-DD'}}
+  function reminders(intel, state) {
+    state = state || {};
+    var list = [];
+    intel.promises.forEach(function (p) { list.push({ id: p.id, kind: p.mine ? 'you-promised' : 'they-promised', title: p.mine ? 'You said: “' + p.text + '”' : p.person + ' said: “' + p.text + '”', person: p.person, due: p.due, guessed: p.guessed, subject: p.subject, autoDone: p.done }); });
+    intel.questions.forEach(function (q) { list.push({ id: q.id, kind: q.mine ? 'waiting-answer' : 'you-owe-answer', title: q.mine ? 'You asked ' + q.person + ': “' + q.text + '”' : q.person + ' asked: “' + q.text + '”', person: q.person, due: q.due, guessed: true, subject: q.subject, autoDone: false }); });
+    intel.noReply.forEach(function (n) { list.push({ id: n.id, kind: 'no-reply', title: 'No reply yet to: “' + n.text + '”', person: n.person, due: n.due, guessed: true, subject: n.subject, autoDone: false }); });
+    return list.map(function (r) {
+      var s = state[r.id] || {};
+      r.done = s.done != null ? !!s.done : r.autoDone; r.snoozed = s.snooze || ''; r.when = s.snooze || s.due || r.due;
+      r.status = r.done ? 'done' : r.when < intel.today ? 'overdue' : r.when === intel.today ? 'today' : 'upcoming';
+      return r;
+    }).sort(function (a, b) { return (a.done - b.done) || a.when.localeCompare(b.when); });
+  }
+  // Saved follow-ups: {id: item}. New finds are added; your done/snooze choices are kept.
+  function mergeFollowups(saved, fresh, today) {
+    var out = {}; Object.keys(saved || {}).forEach(function (k) { out[k] = saved[k]; });
+    fresh.forEach(function (r) {
+      var o = out[r.id];
+      out[r.id] = { id: r.id, kind: r.kind, title: r.title, person: r.person, due: r.due, guessed: r.guessed, subject: r.subject,
+        done: o ? (o.done || !!r.autoDone) : !!r.autoDone, snooze: o ? o.snooze || '' : '', added: o ? o.added : today };
+    });
+    return out;
+  }
+  function followupList(saved, today, filter) {
+    return Object.keys(saved || {}).map(function (k) {
+      var r = Object.assign({}, saved[k]); r.when = r.snooze || r.due || today;
+      r.status = r.done ? 'done' : r.when < today ? 'overdue' : r.when === today ? 'today' : 'upcoming'; return r;
+    }).filter(function (r) { return !filter || filter === 'all' || (filter === 'done' ? r.done : !r.done); })
+      .sort(function (a, b) { return (a.done - b.done) || a.when.localeCompare(b.when) || a.title.localeCompare(b.title); });
+  }
+  var KIND_LABEL = { 'you-promised': 'You promised', 'they-promised': 'They promised', 'waiting-answer': 'Waiting for an answer', 'you-owe-answer': 'You owe an answer', 'no-reply': 'No reply yet' };
+  function snooze(option, today) {
+    var t = fromIso(today);
+    if (option === 'tomorrow') return isoOf(addDays(t, 1));
+    if (option === '3days') return addBusinessDays(today, 3);
+    if (option === 'monday') return isoOf(addDays(t, 7 - ((t.getUTCDay() + 6) % 7)));
+    if (option === 'week') return isoOf(addDays(t, 7));
+    return /^\d{4}-\d{2}-\d{2}$/.test(option) ? option : today;
+  }
+  function dashboard(rems, prioritised, today) {
+    var open = rems.filter(function (r) { return !r.done; });
+    var weekEnd = isoOf(addDays(fromIso(today), 7));
+    return {
+      overdue: open.filter(function (r) { return r.when < today; }),
+      today: open.filter(function (r) { return r.when === today; }),
+      soon: open.filter(function (r) { return r.when > today && r.when <= weekEnd; }),
+      urgent: (prioritised || []).filter(function (e) { return e.analysis && e.analysis.urgent; }),
+      owe: open.filter(function (r) { return r.kind === 'you-owe-answer' || r.kind === 'you-promised'; }).length,
+      waiting: open.filter(function (r) { return r.kind === 'they-promised' || r.kind === 'waiting-answer' || r.kind === 'no-reply'; }).length
+    };
+  }
+  function icsEsc(s) { return String(s || '').replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n'); }
+  function fold(line) { var out = [], i = 0; while (line.length - i > 74) { out.push((i ? ' ' : '') + line.slice(i, i + (i ? 73 : 74))); i += i ? 73 : 74; } out.push((i ? ' ' : '') + line.slice(i)); return out.join('\r\n'); }
+  function remindersICS(rems, stamp) {
+    var now = stamp || new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '');
+    var o = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Brahaspati//Inbox Intelligence//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH'];
+    rems.filter(function (r) { return !r.done && r.when; }).forEach(function (r) {
+      var d = r.when.replace(/-/g, ''), nd = isoOf(addDays(fromIso(r.when), 1)).replace(/-/g, '');
+      o.push('BEGIN:VEVENT', 'UID:' + r.id + '-' + d + '@brahaspati', 'DTSTAMP:' + now, 'DTSTART;VALUE=DATE:' + d, 'DTEND;VALUE=DATE:' + nd,
+        fold('SUMMARY:' + icsEsc('Follow up: ' + (KIND_LABEL[r.kind] || '') + ' — ' + (r.subject || r.person).slice(0, 80))),
+        fold('DESCRIPTION:' + icsEsc(r.title + (r.subject ? '\nEmail: ' + r.subject : ''))),
+        'BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:' + icsEsc('Follow up'), 'TRIGGER:PT9H', 'END:VALARM', 'TRANSP:TRANSPARENT', 'END:VEVENT');
+    });
+    o.push('END:VCALENDAR');
+    return o.join('\r\n') + '\r\n';
+  }
+
+  var L = { split: split, classify: classify, extract: extract, prioritise: prioritise, TEMPLATES: TEMPLATES, FIELD_LABELS: FIELD_LABELS, PHRASES: PHRASES, fill: fill, suggestTemplates: suggestTemplates, toneCheck: toneCheck, soften: soften, subjectSuggestions: subjectSuggestions, mailto: mailto, CATS: CATS,
+    parseDate: parseDate, resolveDate: resolveDate, normaliseSubject: normaliseSubject, parseMe: parseMe, isMe: isMe, guessMe: guessMe, threads: threads, intelligence: intelligence, reminders: reminders, snooze: snooze, dashboard: dashboard, remindersICS: remindersICS, KIND_LABEL: KIND_LABEL, mergeFollowups: mergeFollowups, followupList: followupList, addBusinessDays: addBusinessDays };
   if (typeof module !== 'undefined' && module.exports) module.exports = L; else root.EmailLib = L;
 })(this);

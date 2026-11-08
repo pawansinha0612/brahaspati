@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Email Assistant — Brahaspati</title>
-  <meta name="description" content="Paste a pile of emails to sort them by what they need, draft polite replies from 26 templates in a warm, neutral or formal tone, and check your own drafts for blunt or passive-aggressive phrasing.">
+  <title>Inbox Intelligence — Brahaspati</title>
+  <meta name="description" content="Paste your emails to sort them by what they need, spot promises you made and questions nobody answered, get dated follow-up reminders (.ics), draft polite replies from 26 templates and check your tone.">
   <link rel="stylesheet" href="../../assets/style.css">
   <style>
     .mail { border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); padding: 12px 14px; margin: 10px 0; }
@@ -20,19 +20,30 @@
     .issue.sev-bad { border-color: var(--bad); } .issue.sev-warn { border-color: var(--warn); } .issue.sev-info { border-color: var(--accent); }
     .issue p { margin: 2px 0; overflow-wrap: anywhere; }
     .subj button { text-align: left; }
+    .fu { border: 1px solid var(--line); border-left: 4px solid var(--line); border-radius: var(--radius); background: var(--panel); padding: 10px 12px; margin: 8px 0; }
+    .fu.overdue { border-left-color: var(--bad); } .fu.today { border-left-color: var(--warn); } .fu.upcoming { border-left-color: var(--accent); } .fu.done { opacity: .65; }
+    .fu p { margin: 2px 0; overflow-wrap: anywhere; }
+    .fu .meta { font-size: 13px; color: var(--muted); }
+    .fu .row { gap: 6px; margin-top: 6px; }
+    .fu select, .fu input[type=date] { width: auto; padding: 3px 6px; font-size: 13px; }
+    .fu label.chk { display: inline-flex; gap: 5px; align-items: center; font-weight: 400; margin: 0; font-size: 14px; }
+    .ilist { padding-left: 18px; margin: 4px 0; } .ilist li { margin: 6px 0; overflow-wrap: anywhere; }
   </style>
 </head>
 <body>
 <main class="wrap">
   <section class="hero">
     <p class="eyebrow">Utilities</p>
-    <h1>Email Assistant</h1>
-    <p class="lead">Paste a pile of emails to see what needs you first, draft a polite reply from a template in the tone you want, and check your own emails before you hit send.</p>
-    <p class="small muted">This isn’t connected to any mailbox. You copy emails in and copy replies out — nothing is sent, read or stored anywhere else.</p>
+    <h1>Inbox Intelligence</h1>
+    <p class="lead">Paste a pile of emails to see what needs you first, the promises you (and others) made, questions nobody answered and who you’re waiting on — then set dated follow-ups, draft a polite reply and check your tone before you hit send.</p>
+    <p class="small muted">This isn’t connected to any mailbox. You copy emails in and copy replies out — nothing is sent or uploaded. Follow-ups you keep are saved in this browser only.</p>
   </section>
 
   <div class="tabs" data-tabs="em">
     <button data-tab="sort">Sort my emails</button>
+    <button data-tab="today">Today</button>
+    <button data-tab="promises">Promises &amp; questions</button>
+    <button data-tab="followups">Follow-ups</button>
     <button data-tab="draft">Draft a reply</button>
     <button data-tab="tone">Check my tone</button>
   </div>
@@ -42,10 +53,45 @@
       <label for="pile" style="margin-top:0">Paste one or more emails</label>
       <p class="small muted" style="margin-top:0">Start each one with its “From:” line (as when you copy from Outlook or Gmail), or separate them with a line of <code>---</code>.</p>
       <textarea id="pile" class="prose" style="min-height:200px"></textarea>
+      <label for="myself">You — your email address and/or name <span class="small muted">(so it knows which emails you wrote)</span></label>
+      <input id="myself" type="text" placeholder="e.g. alex@mybiz.com.au, Alex Chen" autocomplete="email">
       <div class="row" style="margin-top:10px"><button class="btn primary" id="sortBtn" type="button">Sort by priority</button><button class="btn" id="sampleSort" type="button">Try with sample</button></div>
+      <p class="small muted" id="intelNote" style="margin:8px 0 0"></p>
     </div>
     <div class="stat-row" id="sortStats"></div>
     <div id="sorted"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="today">
+    <p class="small muted" id="todayDate" style="margin:12px 0 0"></p>
+    <div class="stat-row" id="todayStats" style="margin-top:8px"></div>
+    <div id="todayLists"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="promises">
+    <p class="small muted" style="margin:12px 0 0">Found in the emails you last sorted. Promises are sentences like “I’ll send…”, “let me check…”, “we will get back to you by…”. A question counts as answered when a later reply in the same conversation talks about the same thing.</p>
+    <div class="cols-2">
+      <div class="panel"><h2 style="margin-top:0">Promises you made</h2><div id="pMine"></div></div>
+      <div class="panel"><h2 style="margin-top:0">Questions you haven’t answered</h2><div id="qOwe"></div></div>
+      <div class="panel"><h2 style="margin-top:0">Promises made to you</h2><div id="pTheirs"></div></div>
+      <div class="panel"><h2 style="margin-top:0">Waiting on others</h2><p class="small muted" style="margin-top:-4px">Your questions with no answer, and threads where you wrote last.</p><div id="waiting"></div></div>
+    </div>
+    <div class="panel"><h2 style="margin-top:0">Conversations</h2><div id="threadList"></div></div>
+  </section>
+
+  <section class="tab-panel" data-panel="followups">
+    <div class="panel">
+      <p class="small muted" style="margin-top:0">Every promise and unanswered question becomes a follow-up with a date. Dates come from the email (“by Thursday” in an email sent Monday = that Thursday); with no date, it’s 1–3 business days after the email. Follow-ups stay here (in this browser) until you tick them off or delete them.</p>
+      <div class="row">
+        <label for="fuFilter" style="margin:0">Show</label>
+        <select id="fuFilter" style="max-width:200px"><option value="open">Still to do</option><option value="all">All</option><option value="done">Done</option></select>
+        <button class="btn" id="fuIcs" type="button">Add to calendar (.ics)</button>
+        <button class="btn" id="fuCsv" type="button">Download CSV</button>
+        <button class="btn small" id="fuClearDone" type="button">Remove done</button>
+        <button class="btn small" id="fuClearAll" type="button">Remove all</button>
+      </div>
+    </div>
+    <div id="fuList"></div>
   </section>
 
   <section class="tab-panel" data-panel="draft">
@@ -95,7 +141,7 @@
   </section>
   <div id="aiOut"></div>
 
-  <p class="privacy">Everything happens in your browser. Sorting and tone checks use fixed word lists, not AI, so they can miss sarcasm or context. If you turn on the optional AI helper, the ✨ buttons send only the text you’re rewriting to the AI you chose.</p>
+  <p class="privacy">Everything happens in your browser. Sorting, promises, questions and tone checks use fixed word lists and patterns, not AI, so they can miss sarcasm, context or a promise worded unusually. If you turn on the optional AI helper, the ✨ buttons send only the text you’re rewriting to the AI you chose.</p>
   <div id="aiNote"></div>
 </main>
 <script src="../../assets/core.js"></script>

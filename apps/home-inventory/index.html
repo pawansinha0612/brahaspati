@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Home Inventory Vault — Brahaspati</title>
+  <meta name="description" content="Free home contents inventory: photos, receipts, serial numbers, purchase dates, warranty reminders and a printable insurance claim list. Everything stays on your device.">
+  <link rel="stylesheet" href="../../assets/style.css">
+  <style>
+    .form-grid { display: grid; gap: 0 14px; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+    .form-grid .full { grid-column: 1 / -1; }
+    .thumbs { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+    .thumb { position: relative; width: 84px; height: 84px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--soft); display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--muted); text-align: center; }
+    .thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .thumb button { position: absolute; top: 2px; right: 2px; border: 0; border-radius: 99px; width: 24px; height: 24px; background: var(--panel); color: var(--bad); cursor: pointer; font-weight: 700; }
+    .item-card { display: grid; grid-template-columns: 72px 1fr; gap: 10px; align-items: start; }
+    .item-card .pic { width: 72px; height: 72px; border-radius: 8px; background: var(--soft); overflow: hidden; display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 11px; }
+    .item-card .pic img { width: 100%; height: 100%; object-fit: cover; }
+    .item-card h3 { margin: 0 0 2px; font-size: 16px; overflow-wrap: anywhere; }
+    .item-card .acts { grid-column: 1 / -1; }
+    .filters { display: grid; gap: 0 12px; grid-template-columns: 2fr 1fr 1fr; }
+    @media (max-width: 640px) { .filters { grid-template-columns: 1fr; } }
+    .check { display: flex; gap: 6px; align-items: center; font-weight: 400; margin: 0; }
+    td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .file-btn { position: relative; overflow: hidden; }
+    .file-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  </style>
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <p class="eyebrow">Personal · home</p>
+    <h1>Home Inventory Vault</h1>
+    <p class="lead">Keep a record of what you own — photos, receipts, serial numbers, purchase dates and warranties — so an insurance claim or a warranty repair takes minutes, not days.</p>
+    <div class="row no-print">
+      <button class="btn primary" id="addTop" type="button">Add an item</button>
+      <button class="btn" id="sample" type="button">Load sample data</button>
+    </div>
+    <p class="privacy">Everything stays on this device — nothing is uploaded. Clearing your browser data deletes it, so download a backup now and then (Backup tab).</p>
+  </section>
+
+  <div class="tabs" data-tabs="inv">
+    <button data-tab="items">Items</button>
+    <button data-tab="rooms">Rooms</button>
+    <button data-tab="insurance">Insurance</button>
+    <button data-tab="warranty">Warranties</button>
+    <button data-tab="backup">Backup &amp; storage</button>
+  </div>
+
+  <section class="tab-panel" data-panel="items">
+    <div id="editor" class="panel" hidden></div>
+    <div class="stat-row" id="stats" style="margin-top:14px"></div>
+    <div class="panel">
+      <div class="filters">
+        <div><label for="q">Search</label><input type="search" id="q" placeholder="Name, brand, serial number, retailer…"></div>
+        <div><label for="fRoom">Room</label><select id="fRoom"></select></div>
+        <div><label for="fCat">Category</label><select id="fCat"></select></div>
+      </div>
+      <p class="small muted" id="count"></p>
+      <div class="grid" id="list"></div>
+    </div>
+  </section>
+
+  <section class="tab-panel" data-panel="rooms"><div id="rooms"></div></section>
+
+  <section class="tab-panel" data-panel="insurance">
+    <div class="cols-2" style="margin-top:14px">
+      <div class="panel"><h2 style="margin-top:0">Value by room</h2><div id="byRoom"></div></div>
+      <div class="panel"><h2 style="margin-top:0">Value by category</h2><div id="byCat"></div></div>
+    </div>
+    <div class="panel">
+      <h2 style="margin-top:0">Is your contents cover enough?</h2>
+      <p class="small muted">Compare the total of your list with the contents sum insured on your policy. This list uses what you paid; replacing things new today may cost more, and most homes have far more small items than anyone lists.</p>
+      <div class="row"><label for="sumInsured" style="margin:0">Contents sum insured (AUD)</label><input type="number" id="sumInsured" min="0" step="100" style="max-width:180px"></div>
+      <p id="cover"></p>
+    </div>
+    <div class="panel">
+      <h2 style="margin-top:0">Claim pack</h2>
+      <p class="small muted">Tick the items lost or damaged, then print or save a list with photos, serial numbers and values to send to your insurer.</p>
+      <div class="row"><button class="btn small" type="button" id="selAll">Select all</button><button class="btn small" type="button" id="selNone">Clear</button></div>
+      <label for="claimReason">What happened (optional, printed at the top)</label>
+      <input type="text" id="claimReason" placeholder="e.g. Break-in on 3 Nov 2026 — police report E123456">
+      <div id="claimList" style="margin-top:10px"></div>
+      <div class="row" style="margin-top:10px"><button class="btn primary" type="button" id="claimPrint">Print claim pack</button><button class="btn" type="button" id="claimDl">Download (HTML)</button></div>
+    </div>
+    <div class="panel"><h2 style="margin-top:0">Missing proof</h2><p class="small muted">Insurers usually ask for a photo and a receipt or bank statement; serial numbers help police and insurers for stolen electronics and tools.</p><div id="gaps"></div></div>
+  </section>
+
+  <section class="tab-panel" data-panel="warranty">
+    <div class="panel">
+      <div class="row"><h2 style="margin:0">Warranties ending soon</h2>
+        <select id="soonDays" aria-label="Within" style="width:auto"><option value="30">Next 30 days</option><option value="90" selected>Next 90 days</option><option value="180">Next 6 months</option><option value="365">Next 12 months</option></select></div>
+      <div id="soon" style="margin-top:10px"></div>
+      <div class="row" style="margin-top:10px"><button class="btn primary" type="button" id="ics">Add warranty end dates to my calendar (.ics)</button></div>
+      <p class="small muted">The calendar file has one all-day event on each warranty end date, with an alert 30 days before. In Australia you also have rights under the Australian Consumer Law after a warranty ends if a product fails sooner than it reasonably should.</p>
+    </div>
+    <div class="panel"><h2 style="margin-top:0">All warranties</h2><div id="allW"></div></div>
+  </section>
+
+  <section class="tab-panel" data-panel="backup">
+    <div class="panel" id="storage"></div>
+    <div class="panel">
+      <h2 style="margin-top:0">Backup and export</h2>
+      <p class="small">The backup is one file with every item, photo and receipt. Keep it somewhere other than this device. Restoring replaces what is here now.</p>
+      <div class="row">
+        <button class="btn primary" type="button" id="backup">Download full backup</button>
+        <span class="btn file-btn">Restore from backup<input type="file" id="restore" accept=".json,application/json"></span>
+        <button class="btn" type="button" id="csv">Export list (CSV)</button>
+        <button class="btn" type="button" id="wipe">Delete everything</button>
+      </div>
+      <p class="small muted" id="backupMsg"></p>
+    </div>
+  </section>
+</main>
+<script src="../../assets/core.js"></script>
+<script src="./vault-kit.js"></script>
+<script src="./lib.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

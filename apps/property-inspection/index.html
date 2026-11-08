@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Property Inspection Assistant — Brahaspati</title>
+  <meta name="description" content="Free room-by-room property inspections with clean, undamaged and working ratings, photos, tenant sign-off, printable condition reports, entry vs exit comparison, maintenance and follow-ups. Data stays in your browser.">
+  <link rel="stylesheet" href="../../assets/style.css">
+  <link rel="stylesheet" href="../../forge/forge.css">
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <p class="eyebrow">Industry · property</p>
+    <h1>Property Inspection Assistant</h1>
+    <p class="lead">Walk through a rental room by room on your phone: rate each item clean, undamaged and working, add photos and notes, get the tenant to sign on screen, then print the condition report. Compare entry with exit, turn problems into a maintenance list and keep follow-ups on track.</p>
+  </section>
+  <div id="app"></div>
+  <details class="panel">
+    <summary><b>How it works and its limits</b></summary>
+    <ul class="small">
+      <li>Each property lists its rooms. A new inspection builds a checklist from those rooms (kitchens get an oven and rangehood, bathrooms get taps and an exhaust fan, and so on). You can add or remove items and rooms.</li>
+      <li>"Raise maintenance for problems" creates a maintenance item for every item marked N, with a suggested trade, priority and due date (urgent: 1 day, high: 7, medium: 14, low: 30). Check the suggestions — they are simple keyword rules.</li>
+      <li>The entry vs exit comparison flags items that were fine at entry and marked N at exit. It cannot judge fair wear and tear.</li>
+      <li>This is not your state's official condition report form. Use it as your working record, or copy the details into the official form where one is required.</li>
+      <li>Photos are shrunk and stored in this browser only. Large inspections with many photos can fill storage — download backups and remove old photos you no longer need.</li>
+    </ul>
+  </details>
+</main>
+<script src="../../assets/core.js"></script>
+<script src="../../forge/forge-core.js"></script>
+<script src="../../forge/forge-ui.js"></script>
+<script src="./lib.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

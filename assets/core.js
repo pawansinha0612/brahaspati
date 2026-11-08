@@ -221,7 +221,7 @@
     if (document.querySelector('.site-head')) return;
     var head = B.h('header', { class: 'site-head' }, [B.h('div', { class: 'wrap', html:
       '<a class="logo" href="' + B.base + '"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="var(--brand)"/></svg><span>Brah<b>aspati</b></span></a>' +
-      '<nav aria-label="Main"><a href="' + B.base + '#business">Business</a><a href="' + B.base + '#creators">Creators</a><a href="' + B.base + '#personal">Personal</a><a href="' + B.base + '#utilities">Utilities</a><a href="' + B.base + 'ai/">AI settings</a></nav>' })]);
+      '<nav aria-label="Main"><a href="' + B.base + '#business">Business</a><a href="' + B.base + '#industry">Industry</a><a href="' + B.base + '#ecommerce">Sellers</a><a href="' + B.base + '#creators">Creators</a><a href="' + B.base + '#personal">Personal</a><a href="' + B.base + '#utilities">Utilities</a><a href="' + B.base + '#developers">Developers</a><a href="' + B.base + 'ai/">AI settings</a></nav>' })]);
     document.body.insertBefore(head, document.body.firstChild);
     var foot = B.h('footer', { class: 'site-foot' }, [B.h('div', { class: 'wrap', html:
       'Brahaspati — free tools that run in your browser. Your files and data stay on your device unless you turn on an AI helper. ' +

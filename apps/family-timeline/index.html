@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Family Memory Timeline — Brahaspati</title>
+  <meta name="description" content="A private family timeline of photos, short videos, voice notes, stories and milestones, with On this day, a slideshow and a printable memory book. Optional passcode encryption. Stays on your device.">
+  <link rel="stylesheet" href="../../assets/style.css">
+  <style>
+    .form-grid { display: grid; gap: 0 14px; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
+    .form-grid .full { grid-column: 1 / -1; }
+    .check { display: flex; gap: 6px; align-items: center; font-weight: 400; margin: 0; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+    .filters { display: grid; gap: 0 12px; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+    .year { font-size: 26px; margin: 28px 0 4px; display: flex; gap: 10px; align-items: baseline; }
+    .year small { font-size: 14px; color: var(--muted); font-weight: 400; }
+    .month { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 14px 0 6px; }
+    .tline { border-left: 2px solid var(--line); margin-left: 6px; padding-left: 16px; }
+    .mem { position: relative; }
+    .mem::before { content: ""; position: absolute; left: -24px; top: 20px; width: 12px; height: 12px; border-radius: 99px; background: var(--brand); border: 2px solid var(--bg); }
+    .mem h3 { margin: 0; font-size: 17px; overflow-wrap: anywhere; }
+    .mem .meta { font-size: 13px; color: var(--muted); margin: 2px 0 6px; }
+    .mem .story { white-space: pre-wrap; margin: 6px 0; overflow-wrap: anywhere; }
+    .media { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+    .media img, .media video { width: 120px; height: 90px; object-fit: cover; border-radius: 6px; background: var(--soft); cursor: pointer; }
+    .media audio { width: 100%; max-width: 320px; }
+    .thumbs { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+    .thumb { position: relative; width: 90px; min-height: 70px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--soft); display: flex; align-items: center; justify-content: center; font-size: 12px; text-align: center; }
+    .thumb img, .thumb video { width: 100%; height: 70px; object-fit: cover; }
+    .thumb button { position: absolute; top: 2px; right: 2px; border: 0; border-radius: 99px; width: 24px; height: 24px; background: var(--panel); color: var(--bad); cursor: pointer; font-weight: 700; }
+    .file-btn { position: relative; overflow: hidden; }
+    .file-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+    .star { color: var(--brand); font-weight: 700; }
+    #rec[data-on="1"] { background: var(--bad); color: #fff; border-color: var(--bad); }
+    dialog.show { max-width: 960px; width: calc(100% - 24px); padding: 12px; }
+    dialog.show figure { margin: 0; text-align: center; }
+    dialog.show img, dialog.show video { max-height: 70vh; max-width: 100%; border-radius: 8px; }
+    dialog.show figcaption { margin: 8px 0; }
+    .lock { max-width: 460px; margin: 30px auto; }
+  </style>
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <p class="eyebrow">Personal · family</p>
+    <h1>Family Memory Timeline</h1>
+    <p class="lead">Photos, short videos, voice notes and the stories behind them — first steps, school days, Grandma’s wedding — on one private timeline you can browse by person, replay as a slideshow and print as a memory book.</p>
+    <div class="row no-print" id="heroBtns">
+      <button class="btn primary" id="addTop" type="button">Add a memory</button>
+      <button class="btn" id="sample" type="button">Load sample data</button>
+    </div>
+    <p class="privacy">Private by default: everything stays on this device — nothing is uploaded. Clearing your browser data deletes it, so download a backup (Privacy &amp; backup tab).</p>
+  </section>
+
+  <section class="panel lock" id="lockScreen" hidden>
+    <h2 style="margin-top:0">Locked</h2>
+    <p>These memories are encrypted on this device. Enter your passcode to open them.</p>
+    <form id="unlockForm"><label for="unlockPass">Passcode</label><input type="password" id="unlockPass" autocomplete="current-password" required>
+      <div class="row" style="margin-top:10px"><button class="btn primary" type="submit" id="unlockBtn">Unlock</button></div></form>
+    <p class="small bad" id="unlockMsg"></p>
+    <details class="small"><summary>Forgot the passcode?</summary><p>There is no way to recover it — that’s what makes the encryption real. You can restore an older backup, or delete everything here and start again.</p>
+      <button class="btn small" type="button" id="lockWipe">Delete everything on this device</button></details>
+  </section>
+
+  <div id="app" hidden>
+    <div class="tabs" data-tabs="fam">
+      <button data-tab="timeline">Timeline</button>
+      <button data-tab="people">People &amp; milestones</button>
+      <button data-tab="book">Memory book</button>
+      <button data-tab="privacy">Privacy &amp; backup</button>
+    </div>
+
+    <section class="tab-panel" data-panel="timeline">
+      <div id="otd"></div>
+      <div id="editor" class="panel" hidden></div>
+      <div class="panel">
+        <div class="filters">
+          <div><label for="fPerson">Person</label><select id="fPerson"></select></div>
+          <div><label for="fTag">Tag</label><select id="fTag"></select></div>
+          <div><label for="fKind">Show</label><select id="fKind"><option value="">Everything</option><option value="milestones">Milestones only</option><option value="photo">With photos</option><option value="voice">With voice notes</option><option value="video">With videos</option></select></div>
+          <div><label for="fQ">Search</label><input type="search" id="fQ" placeholder="Words in title or story"></div>
+        </div>
+        <div class="row" style="margin-top:10px"><button class="btn" type="button" id="slideBtn">▶ Slideshow</button><span class="small muted" id="count"></span></div>
+      </div>
+      <div id="timeline"></div>
+    </section>
+
+    <section class="tab-panel" data-panel="people">
+      <div class="panel">
+        <h2 style="margin-top:0" id="pTitle">Add a family member</h2>
+        <form id="pForm" class="form-grid">
+          <div><label for="p-name">Name *</label><input type="text" id="p-name" required></div>
+          <div><label for="p-dob">Date of birth (for ages)</label><input type="date" id="p-dob"></div>
+          <div><label for="p-relation">Relationship</label><input type="text" id="p-relation" placeholder="e.g. Daughter"></div>
+          <div style="align-self:end" class="row"><button class="btn primary" type="submit">Save</button><button class="btn" type="button" id="pClear">Clear</button></div>
+        </form>
+      </div>
+      <div id="people"></div>
+    </section>
+
+    <section class="tab-panel" data-panel="book">
+      <div class="panel">
+        <h2 style="margin-top:0">Printable memory book</h2>
+        <p>A simple book: a cover, then memories year by year with up to four photos each and the stories. Print it, or save as PDF from the print window.</p>
+        <div class="form-grid">
+          <div><label for="bTitle">Title</label><input type="text" id="bTitle" value="Our family memories"></div>
+          <div><label for="bSub">Subtitle</label><input type="text" id="bSub" placeholder="e.g. The first six years"></div>
+        </div>
+        <label class="check" style="margin-top:10px"><input type="checkbox" id="bFiltered"> Only the memories shown by the timeline filters</label>
+        <div class="row" style="margin-top:10px"><button class="btn primary" type="button" id="bPrint">Print memory book</button><button class="btn" type="button" id="bDl">Download (HTML)</button></div>
+        <p class="small muted">Voice notes and videos can’t go on paper; the book notes where they exist.</p>
+      </div>
+    </section>
+
+    <section class="tab-panel" data-panel="privacy">
+      <div class="panel" id="lockPanel"></div>
+      <div class="panel" id="storage"></div>
+      <div class="panel">
+        <h2 style="margin-top:0">Backup</h2>
+        <p class="small">One file with every memory, photo, video and voice note. When a passcode is set, the backup file is encrypted with it too. Restoring replaces what’s here now.</p>
+        <div class="row">
+          <button class="btn primary" type="button" id="backup">Download full backup</button>
+          <span class="btn file-btn">Restore from backup<input type="file" id="restore" accept=".json,application/json"></span>
+          <button class="btn" type="button" id="wipe">Delete everything</button>
+        </div>
+        <label for="restorePass">Passcode of the backup (only for encrypted backups)</label>
+        <input type="password" id="restorePass" autocomplete="off" style="max-width:280px">
+        <p class="small muted" id="backupMsg"></p>
+      </div>
+    </section>
+  </div>
+
+  <dialog class="show" id="show" aria-label="Slideshow">
+    <figure id="showFig"></figure>
+    <div class="row" style="justify-content:center"><button class="btn" type="button" id="sPrev">◀ Previous</button><button class="btn" type="button" id="sPlay">Pause</button><button class="btn" type="button" id="sNext">Next ▶</button><button class="btn" type="button" id="sClose">Close</button></div>
+  </dialog>
+</main>
+<script src="../../assets/core.js"></script>
+<script src="../home-inventory/vault-kit.js"></script>
+<script src="./lib.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

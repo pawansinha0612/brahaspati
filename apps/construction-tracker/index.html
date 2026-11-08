@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Construction Project Tracker — Brahaspati</title>
+  <meta name="description" content="Free project tracker for small builders: stages on a timeline, contractor licence and insurance reminders, orders and deliveries, delays, budget vs actual by cost code, variations, site diary with photos and a printable progress report. Data stays in your browser.">
+  <link rel="stylesheet" href="../../assets/style.css">
+  <link rel="stylesheet" href="../../forge/forge.css">
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <p class="eyebrow">Industry · building</p>
+    <h1>Construction Project Tracker</h1>
+    <p class="lead">Plan stages on a timeline, keep contractors' licences and insurance current, chase late deliveries, log delays and variations, write the site diary with photos, and see budget against actual by cost code — then print a progress report for the client.</p>
+  </section>
+  <div id="app"></div>
+  <details class="panel">
+    <summary><b>How it works and its limits</b></summary>
+    <ul class="small">
+      <li>Progress is each stage's % complete, weighted by how many days the stage runs. "Planned by today" assumes work runs evenly through each stage.</li>
+      <li>Actual = costs you enter. Committed = orders marked Ordered or Delivered. When the supplier's invoice arrives, enter it under Costs and set the order to Invoiced so it is not counted twice.</li>
+      <li>Contract value = original price + approved variations. Variations signed by the client on screen are marked Approved.</li>
+      <li>Licence, insurance and workers' comp reminders show here and in the .ics calendar file. Always check licences on your state regulator's register — this tool cannot look them up.</li>
+      <li>This is a simple tracker, not a scheduling engine: stages do not move automatically when something is late.</li>
+    </ul>
+  </details>
+</main>
+<script src="../../assets/core.js"></script>
+<script src="../../forge/forge-core.js"></script>
+<script src="../../forge/forge-ui.js"></script>
+<script src="./lib.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

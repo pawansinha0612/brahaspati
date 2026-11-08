@@ -141,6 +141,7 @@
     if ((m = sent.match(/^\s*(?:action|todo|ai)\s*(?:item)?\s*[:\-–]\s*([A-Z][a-z]+(?:\s[A-Z][a-z]+)?)\s*(?:to|will|[:\-–])\s/i))) return matchPerson(m[1], people);
     if ((m = sent.match(/\b([A-Z][a-z]+),?\s+(?:can|could|would) you\b/)) && !/^(So|And|But|Okay|Ok|Then|Also|Maybe)$/.test(m[1])) return matchPerson(m[1], people);
     if ((m = sent.match(/\b(?:can|could|would) you\b[^?]*?,\s*([A-Z][a-z]+)\s*\??$/))) return matchPerson(m[1], people);
+    if ((m = sent.match(/^\s*([A-Z][a-z]+),?\s+please\s+\w/)) && !/^(So|And|But|Okay|Ok|Then|Also|Maybe|Yes|No|Hi|Hey|Thanks)$/.test(m[1])) return matchPerson(m[1], people);
     if (peopleRe && (m = sent.match(new RegExp('\\b(' + peopleRe + ')(?:\\s[A-Z][a-z]+)?\\s+(?:will|is going to|to|can|has to|needs to|should|is on|takes)\\b')))) return matchPerson(m[1], people);
     if ((m = sent.match(/\b([A-Z][a-z]+)\s+(?:will|is going to)\s+(?!be\b)/)) && !/^(It|This|That|There|We|They|He|She|Who|Which|What|Everyone|Nobody|Someone|Everything|The)$/.test(m[1]) && sent.indexOf(m[0]) > 0) return matchPerson(m[1], people);
     if (ACTION_SELF.test(sent) && !NOT_ACTION.test(sent)) return speaker || 'Me';
@@ -260,6 +261,132 @@
   }
   function hash(s) { var h = 0; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return h; }
 
-  var L = { parse: parse, sentences: sentences, resolveDue: resolveDue, extract: extract, toMarkdown: toMarkdown, toEmail: toEmail, toICS: toICS, fmtDuration: fmtDuration, niceDate: niceDate, toSeconds: toSeconds };
+  // =====================================================================
+  // Decision tracker: a library of meetings, actions tracked across them
+  // =====================================================================
+  var STATUSES = ['open', 'done', 'blocked', 'dropped'];
+  var TSTOP = /^(the|a|an|and|or|to|of|for|on|in|at|by|with|from|is|be|will|i|we|you|it|this|that|please|can|could|would|should|need|needs|send|get|do|make|by|next|week|friday|monday|tuesday|wednesday|thursday|today|tomorrow|eod|end|our|my|your|their|up|out|over|again|also|still|then|sure|so)$/i;
+  function tokens(s) { return String(s || '').toLowerCase().replace(/[^a-z0-9\s-]/g, ' ').split(/\s+/).filter(function (w) { return w.length > 2 && !TSTOP.test(w); }).map(function (w) { return w.replace(/(ing|ed|es|s)$/, '').slice(0, 6); }); }
+  // 0..1 overlap of the meaningful words in two action texts
+  function similarity(a, b) {
+    var A = tokens(a), Bt = tokens(b); if (!A.length || !Bt.length) return 0;
+    var sa = {}, sb = {}; A.forEach(function (w) { sa[w] = 1; }); Bt.forEach(function (w) { sb[w] = 1; });
+    var inter = Object.keys(sa).filter(function (w) { return sb[w]; }).length, uni = Object.keys(Object.assign({}, sa, sb)).length;
+    var small = Math.min(Object.keys(sa).length, Object.keys(sb).length);
+    return Math.max(inter / uni, small >= 2 ? inter / small * 0.85 : 0);
+  }
+  function rid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+  // Make a library entry from extract() output (after your edits)
+  function toEntry(min, opts) {
+    opts = opts || {};
+    return {
+      id: opts.id || rid(), title: opts.title || 'Meeting', date: opts.date || min.meetingDate || iso(new Date()), savedAt: new Date().toISOString(),
+      transcript: String(opts.transcript || '').slice(0, 100000), attendees: (min.attendees || []).slice(),
+      decisions: (min.decisions || []).map(function (d) { return { id: rid(), text: d.text, speaker: d.speaker || null }; }),
+      actions: (min.actions || []).filter(function (a) { return String(a.task || '').trim(); }).map(function (a) { return { id: rid(), owner: a.owner || 'Unassigned', task: a.task, due: a.due || '', status: a.status || 'open' }; }),
+      questions: (min.questions || []).map(function (q) { return q.text; }), risks: (min.risks || []).map(function (r) { return r.text; })
+    };
+  }
+  // Saving the same meeting again (same title and date) replaces it but keeps statuses you set
+  function upsertMeeting(library, entry) {
+    var lib = (library || []).slice(), i = lib.findIndex(function (m) { return m.title.toLowerCase() === entry.title.toLowerCase() && m.date === entry.date; });
+    if (i >= 0) {
+      var old = lib[i];
+      entry.id = old.id;
+      entry.actions.forEach(function (a) { var o = old.actions.filter(function (x) { return similarity(x.task, a.task) >= 0.8; })[0]; if (o) { a.status = o.status; a.id = o.id; } });
+      lib[i] = entry;
+    } else lib.push(entry);
+    return lib.sort(function (a, b) { return a.date.localeCompare(b.date) || String(a.savedAt).localeCompare(String(b.savedAt)); });
+  }
+  function samePerson(a, b) {
+    a = String(a || '').toLowerCase(); b = String(b || '').toLowerCase();
+    if (!a || !b || a === 'unassigned' || b === 'unassigned') return true;
+    return a === b || a.split(' ')[0] === b.split(' ')[0];
+  }
+  // -> [{key, task, owner, due, status, overdue, carried, meetings:[{id,title,date}], refs:[{meetingId, actionId}], firstSeen, lastSeen}]
+  function buildTracker(library, today) {
+    today = today || iso(new Date());
+    var items = [];
+    (library || []).slice().sort(function (a, b) { return a.date.localeCompare(b.date); }).forEach(function (m) {
+      m.actions.forEach(function (a) {
+        var best = null, bestS = 0;
+        items.forEach(function (it) {
+          if (it.meetings.some(function (x) { return x.id === m.id; })) return; // not the same meeting twice
+          var s = similarity(it.task, a.task), need = samePerson(it.owner, a.owner) ? 0.5 : 0.75;
+          if (s >= need && s > bestS) { best = it; bestS = s; }
+        });
+        if (best) {
+          best.meetings.push({ id: m.id, title: m.title, date: m.date }); best.refs.push({ meetingId: m.id, actionId: a.id });
+          best.task = a.task; if (a.owner && a.owner !== 'Unassigned' && !(samePerson(best.owner, a.owner) && best.owner.length > a.owner.length)) best.owner = a.owner; if (a.due) best.due = a.due;
+          best.status = a.status || 'open'; best.lastSeen = m.date;
+        } else items.push({ key: a.id, task: a.task, owner: a.owner || 'Unassigned', due: a.due || '', status: a.status || 'open', meetings: [{ id: m.id, title: m.title, date: m.date }], refs: [{ meetingId: m.id, actionId: a.id }], firstSeen: m.date, lastSeen: m.date });
+      });
+    });
+    items.forEach(function (it) { it.carried = it.meetings.length - 1; it.overdue = (it.status === 'open' || it.status === 'blocked') && !!it.due && it.due < today; it.daysOverdue = it.overdue ? Math.round((parseISO(today) - parseISO(it.due)) / 86400000) : 0; });
+    var rank = { blocked: 0, open: 1, done: 2, dropped: 3 };
+    return items.sort(function (a, b) { return (b.overdue - a.overdue) || rank[a.status] - rank[b.status] || (a.due || '9999').localeCompare(b.due || '9999'); });
+  }
+  // Change status of a tracked item everywhere it appears. Returns a new library.
+  function setStatus(library, item, status) {
+    if (STATUSES.indexOf(status) < 0) return library;
+    return library.map(function (m) {
+      if (!item.refs.some(function (r) { return r.meetingId === m.id; })) return m;
+      var c = Object.assign({}, m); c.actions = m.actions.map(function (a) { return item.refs.some(function (r) { return r.actionId === a.id; }) ? Object.assign({}, a, { status: status }) : a; }); return c;
+    });
+  }
+  function updateAction(library, item, fields) {
+    return library.map(function (m) {
+      var c = Object.assign({}, m); c.actions = m.actions.map(function (a) { return item.refs.some(function (r) { return r.actionId === a.id; }) ? Object.assign({}, a, fields) : a; }); return c;
+    });
+  }
+  function byPerson(items) {
+    var out = {};
+    items.forEach(function (it) { var k = it.owner || 'Unassigned'; (out[k] = out[k] || { owner: k, items: [], open: 0, overdue: 0, done: 0, blocked: 0 }).items.push(it); var p = out[k]; if (it.status === 'open') p.open++; if (it.status === 'blocked') p.blocked++; if (it.status === 'done') p.done++; if (it.overdue) p.overdue++; });
+    return Object.keys(out).map(function (k) { return out[k]; }).sort(function (a, b) { return (b.overdue - a.overdue) || (b.open + b.blocked) - (a.open + a.blocked) || a.owner.localeCompare(b.owner); });
+  }
+  function decisionLog(library, query) {
+    var q = String(query || '').toLowerCase().split(/\s+/).filter(Boolean), out = [];
+    (library || []).forEach(function (m) { m.decisions.forEach(function (d) { out.push({ text: d.text, speaker: d.speaker, meeting: m.title, date: m.date, meetingId: m.id }); }); });
+    return out.filter(function (d) { var hay = (d.text + ' ' + d.meeting + ' ' + (d.speaker || '')).toLowerCase(); return q.every(function (w) { return hay.indexOf(w) >= 0; }); })
+      .sort(function (a, b) { return b.date.localeCompare(a.date); });
+  }
+  function csvCell(v) { v = v == null ? '' : String(v); return /[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
+  function trackerCSV(items) {
+    return ['Owner,Action,Due,Status,Overdue,Times raised,First raised,Last raised,Meetings'].concat(items.map(function (it) {
+      return [it.owner, it.task, it.due, it.status, it.overdue ? 'yes' : '', it.meetings.length, it.firstSeen, it.lastSeen, it.meetings.map(function (m) { return m.date + ' ' + m.title; }).join('; ')].map(csvCell).join(',');
+    })).join('\r\n') + '\r\n';
+  }
+  function decisionsCSV(decs) { return ['Date,Meeting,Decision,Said by'].concat(decs.map(function (d) { return [d.date, d.meeting, d.text, d.speaker || ''].map(csvCell).join(','); })).join('\r\n') + '\r\n'; }
+  function trackerMarkdown(items, decs, today) {
+    var o = ['# Action and decision tracker', '', '_As at ' + niceDate(today || iso(new Date())) + '_', '', '## Actions', ''];
+    if (!items.length) o.push('_None._');
+    else { o.push('| Owner | Action | Due | Status | Raised |', '| --- | --- | --- | --- | --- |'); items.forEach(function (it) { o.push('| ' + mdCell(it.owner) + ' | ' + mdCell(it.task) + ' | ' + (it.due ? niceDate(it.due) : '—') + (it.overdue ? ' ⚠️ overdue' : '') + ' | ' + it.status + ' | ' + it.meetings.length + (it.carried ? '× (carried over)' : '×') + ' |'); }); }
+    o.push('', '## Decisions', '');
+    if (!decs.length) o.push('_None._'); else decs.forEach(function (d) { o.push('- **' + niceDate(d.date) + '** (' + d.meeting + '): ' + d.text); });
+    return o.join('\n') + '\n';
+  }
+  // Pre-meeting agenda from what's still open
+  function agenda(items, library, opts) {
+    opts = opts || {}; var today = opts.date || iso(new Date());
+    var open = items.filter(function (it) { return it.status === 'open' || it.status === 'blocked'; });
+    var overdue = open.filter(function (it) { return it.overdue; }), blocked = open.filter(function (it) { return it.status === 'blocked'; });
+    var carried = open.filter(function (it) { return it.carried >= 1 && !it.overdue && it.status !== 'blocked'; });
+    var rest = open.filter(function (it) { return overdue.indexOf(it) < 0 && blocked.indexOf(it) < 0 && carried.indexOf(it) < 0; });
+    var last = (library || []).slice().sort(function (a, b) { return b.date.localeCompare(a.date); })[0];
+    var o = ['# ' + (opts.title || 'Agenda'), '', '**Date:** ' + niceDate(today), ''], n = 1;
+    function sec(h, list, fmt) { if (!list.length) return; o.push('## ' + (n++) + '. ' + h); list.forEach(function (x) { o.push('- ' + fmt(x)); }); o.push(''); }
+    var who = function (it) { return it.owner + ' — ' + it.task + (it.due ? ' (due ' + niceDate(it.due) + ')' : ''); };
+    sec('Overdue actions — what’s in the way?', overdue, function (it) { return who(it) + ' — ' + it.daysOverdue + ' day' + (it.daysOverdue === 1 ? '' : 's') + ' late'; });
+    sec('Blocked — what do we need to unblock?', blocked, who);
+    sec('Carried over from earlier meetings — keep, change or drop?', carried, function (it) { return who(it) + ' — raised ' + it.meetings.length + ' times since ' + niceDate(it.firstSeen); });
+    sec('Open actions — quick updates', rest, who);
+    if (last && last.questions && last.questions.length) sec('Open questions from ' + last.title + ' (' + niceDate(last.date) + ')', last.questions, function (q) { return q; });
+    if (last && last.risks && last.risks.length) sec('Risks to check', last.risks, function (r) { return r; });
+    o.push('## ' + (n++) + '. New business', '- ', '', '## ' + n + '. Decisions and actions from today', '- ');
+    return o.join('\n') + '\n';
+  }
+
+  var L = { STATUSES: STATUSES, similarity: similarity, toEntry: toEntry, upsertMeeting: upsertMeeting, buildTracker: buildTracker, setStatus: setStatus, updateAction: updateAction, byPerson: byPerson, decisionLog: decisionLog, trackerCSV: trackerCSV, decisionsCSV: decisionsCSV, trackerMarkdown: trackerMarkdown, agenda: agenda,
+    parse: parse, sentences: sentences, resolveDue: resolveDue, extract: extract, toMarkdown: toMarkdown, toEmail: toEmail, toICS: toICS, fmtDuration: fmtDuration, niceDate: niceDate, toSeconds: toSeconds };
   if (typeof module !== 'undefined' && module.exports) module.exports = L; else root.MinutesLib = L;
 })(this);

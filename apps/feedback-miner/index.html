@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Review &amp; Feedback Miner — Brahaspati</title>
+  <meta name="description" content="Find recurring complaints, praise and product improvement ideas in customer reviews and feedback. Import Google, Shopify, Amazon, Trustpilot or survey exports, see trends and emerging issues, and draft replies. Free and private.">
+  <link rel="stylesheet" href="../../assets/style.css">
+  <style>
+    .map-grid { display: grid; gap: 8px 14px; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+    .map-grid label { margin: 4px 0 2px; }
+    .modes { display: flex; flex-wrap: wrap; gap: 8px 18px; }
+    .modes label { display: flex; gap: 6px; align-items: center; font-weight: 400; margin: 4px 0; }
+    .quote { border-left: 3px solid var(--line); padding: 2px 0 2px 10px; margin: 6px 0; font-size: 14px; max-width: 72ch; }
+    .quote.neg { border-color: var(--bad); } .quote.pos { border-color: var(--ok); }
+    .quote cite { display: block; font-size: 12px; color: var(--muted); font-style: normal; }
+    .theme h3 { margin: 0 0 4px; }
+    .heat td.c { text-align: center; min-width: 34px; }
+    .heat th { white-space: nowrap; }
+    .reply textarea { min-height: 170px; font-family: var(--font); font-size: 14px; }
+    .reply .orig { font-size: 14px; }
+    .opts { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); align-items: end; }
+  </style>
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <p class="eyebrow">Business · customers</p>
+    <h1>Review &amp; Feedback Miner</h1>
+    <p class="lead">Read hundreds of reviews in seconds. See what customers complain about most, what they love, what is getting worse, and which products need fixing — then reply to unhappy customers properly.</p>
+    <div class="row no-print">
+      <button class="btn primary" id="sample" type="button">Load sample data</button>
+      <button class="btn" id="backup" type="button">Download backup</button>
+      <button class="btn" id="restore" type="button">Restore backup</button>
+      <button class="btn" id="clearAll" type="button">Clear everything</button>
+    </div>
+    <p class="privacy">Reviews are analysed inside this browser and saved only on this device. Nothing is uploaded unless you turn on the optional AI helper and press an AI button.</p>
+  </section>
+
+  <div class="tabs" data-tabs="fm">
+    <button data-tab="import">1. Import</button>
+    <button data-tab="overview">2. Overview</button>
+    <button data-tab="themes">Complaints &amp; praise</button>
+    <button data-tab="trends">Trends</button>
+    <button data-tab="products">Products</button>
+    <button data-tab="replies">Reply drafts</button>
+    <button data-tab="reviews">All reviews</button>
+    <button data-tab="how">How it works</button>
+  </div>
+
+  <section class="tab-panel" data-panel="import">
+    <div class="panel">
+      <h3 style="margin-top:0">What kind of business?</h3>
+      <div class="modes" role="radiogroup" aria-label="Business type">
+        <label><input type="radio" name="mode" value="service" checked> Service business (salon, clinic, café, trades…)</label>
+        <label><input type="radio" name="mode" value="product"> Product seller (online shop, Amazon, Etsy…)</label>
+      </div>
+      <p class="small muted">This sets the themes we look for: wait time, staff, price, cleanliness, booking and communication for services; size and fit, quality, shipping, packaging, battery, instructions and value for products.</p>
+      <div class="opts">
+        <div><label for="biz">Business name (for replies)</label><input type="text" id="biz" placeholder="Your business name"></div>
+        <div><label for="contact">Contact for replies</label><input type="text" id="contact" placeholder="email or phone"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h3 style="margin-top:0">Import a file</h3>
+      <p class="small">Google Business Profile, Shopify review apps (Judge.me, Yotpo, Loox), Amazon, Etsy, Trustpilot, Facebook or a survey tool (Google Forms, SurveyMonkey, Typeform) — any CSV or Excel export with a text column works.</p>
+      <div class="drop" id="drop">Drop a CSV or Excel file here, or click to choose</div>
+      <p class="small muted" id="fileInfo"></p>
+      <div id="mapPanel" hidden>
+        <h3>Check the columns</h3>
+        <div class="map-grid" id="mapGrid"></div>
+        <div class="row" style="margin-top:12px"><button class="btn primary" id="analyseFile" type="button">Analyse file</button><span class="small muted" id="msg"></span></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h3 style="margin-top:0">…or paste reviews</h3>
+      <label for="paste">One review per paragraph (leave a blank line between them). Start with "★★★★☆" or "4/5" to include a rating.</label>
+      <textarea id="paste" class="prose" placeholder="★★★★★ Lovely staff, will be back&#10;&#10;2/5 - Waited 30 minutes and nobody apologised"></textarea>
+      <div class="row" style="margin-top:8px"><button class="btn primary" id="analysePaste" type="button">Analyse pasted reviews</button></div>
+    </div>
+  </section>
+
+  <section class="tab-panel" data-panel="overview"><div id="ovOut"><p class="muted">Import reviews (or load the sample) first.</p></div></section>
+  <section class="tab-panel" data-panel="themes"><div id="thOut"><p class="muted">Import reviews first.</p></div></section>
+  <section class="tab-panel" data-panel="trends"><div id="trOut"><p class="muted">Import reviews first.</p></div></section>
+  <section class="tab-panel" data-panel="products"><div id="prOut"><p class="muted">Import reviews first.</p></div></section>
+  <section class="tab-panel" data-panel="replies"><div id="rpOut"><p class="muted">Import reviews first.</p></div></section>
+  <section class="tab-panel" data-panel="reviews"><div id="rvOut"><p class="muted">Import reviews first.</p></div></section>
+
+  <section class="tab-panel" data-panel="how">
+    <div class="panel">
+      <h3 style="margin-top:0">How it works</h3>
+      <ol>
+        <li><b>Sentiment</b>: every word is scored from a list of about 400 review words (for example "rude" −3, "lovely" +3). "Not", "never" and "didn't" flip the next few words, "very" and "extremely" strengthen them, and the part after "but" counts more. When there is a star rating it counts for 60% of the verdict.</li>
+        <li><b>Themes</b>: each sentence is checked for theme words (wait, staff, price…) and for clear complaint patterns like "waited 40 minutes" or "runs small". A sentence counts as a complaint about a theme when it is negative or matches a complaint pattern.</li>
+        <li><b>Recurring complaints</b> are ranked by how many reviews complain × how strongly.</li>
+        <li><b>Emerging issues</b>: the share of reviews complaining about a theme in the last two months compared with the four months before. A theme is flagged when it has grown by half or more (and at least 3 reviews).</li>
+        <li><b>Phrases</b>: two and three-word phrases that keep coming up in negative (or positive) reviews, to catch things the themes miss.</li>
+        <li><b>Reply drafts</b> are built from the complaint themes found in each review. Always read and personalise before posting.</li>
+      </ol>
+      <p class="small muted">Limits: word-based scoring misses sarcasm, slang and mixed languages, and short reviews ("meh") carry little signal. It can't fetch reviews from Google or Amazon for you — a browser isn't allowed to read other websites — so export or copy them in. Use the numbers as a guide and read the quotes.</p>
+    </div>
+  </section>
+</main>
+<script src="../../assets/core.js"></script>
+<script src="../../assets/ai.js"></script>
+<script src="./lib.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

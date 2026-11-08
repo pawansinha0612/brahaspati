@@ -9,12 +9,21 @@ data stay on your device. You don't need an account.
 
 | Area | Tools |
 | --- | --- |
-| Business | Excel & CSV Intelligence, Small Business Admin, Website Health Checker |
-| Creators | Creator Autopilot, Content Insights, AI Story Studio |
-| Personal | Money Command Centre, Job Application Copilot, Knowledge Brain, Automation Hub, Everyday English |
-| Utilities | File Converter, PDF Intelligence, Screenshot Reader, Regex Builder, SQL Assistant, Meeting Minutes, Email Assistant, Website Change Monitor |
+| Business | Excel & CSV Intelligence, Small Business Admin, Website Health Checker, Decision Simulator, Contract Risk Scanner, Proposal Generator, Business Process Mapper, Compliance Calendar, Vendor Comparison, Employee Onboarding, Business Continuity Planner, Tender Response Assistant, Review & Feedback Miner, Inventory Forecasting, Appointment No-show Predictor |
+| Industry apps | Property Inspection Assistant, Construction Project Tracker, Tradie Business Manager, Pet Business Manager, Restaurant Profit Calculator, Cleaning Business OS, Logistics Control Tower, Gym & Studio Manager |
+| Online sellers | Returns Intelligence, Product Listing Optimiser, Competitor Price Watcher, Digital Product Store, Affiliate Content Manager |
+| Creators | Creator Autopilot, Content Insights, AI Story Studio, Video Editor |
+| Personal | Money Command Centre, Job Application Copilot, Knowledge Brain, Automation Hub, Everyday English, Home Inventory Vault, Family Memory Timeline, Smart Trip Planner, Subscription Leak Detector, Life Admin Vault |
+| Utilities | File Converter, PDF Intelligence, Screenshot Reader, Meeting Minutes & Decision Tracker, Inbox Intelligence, Knowledge Graph Builder |
+| Developers & testers | Regex Builder, SQL Assistant, Website Change Monitor, JSON & API Response Diff, Test Data Generator, Log Analyser, Architecture Diagram Generator, Distributed Trace Explainer, Database Performance Lab, Test Coverage Intelligence, Visual Regression Checker, Dependency Risk Monitor |
 
 The full list, with descriptions, is in [`apps.json`](apps.json). The home page is built from it.
+
+## ProductForge
+
+The industry apps (property, tradie, construction, cleaning, pet, logistics, gym) are built on `forge/`.
+It's a shared engine for small-business records that gives you lists, boards, forms, calendars, reminders, printable
+documents, photos, signatures, CSV and backup. Each new app is mostly configuration. See [`forge/README.md`](forge/README.md).
 
 ## Install it as an app
 

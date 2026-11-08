@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Business Process Mapper — Brahaspati</title>
+  <meta name="description" content="Free business process mapper: type, paste, dictate or upload a workflow (step list, meeting transcript or event log CSV) and get a swimlane process diagram, an SOP document and improvement hints. Runs in your browser.">
+  <link rel="stylesheet" href="../../assets/style.css">
+  <style>
+    .form-grid { display: grid; gap: 0 14px; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+    .form-grid .full { grid-column: 1 / -1; }
+    .diagram { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; overflow: auto; min-height: 120px; max-height: 80vh; }
+    .diagram svg { max-width: none; height: auto; }
+    .diagram.fit svg { max-width: 100%; }
+    .hint { padding: 10px 12px; border-left: 4px solid var(--line); background: var(--panel); border-radius: 6px; margin: 8px 0; }
+    .hint.warn { border-left-color: var(--warn); color: var(--ink); } .hint.bad { border-left-color: var(--bad); color: var(--ink); }
+    .hint.ok { border-left-color: var(--ok); color: var(--ink); } .hint.info { border-left-color: var(--accent); }
+    .sop-preview { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; }
+    .sop-preview table { font-size: 13px; }
+    .rec-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--bad); animation: blink 1s infinite; }
+    @keyframes blink { 50% { opacity: .2; } }
+    td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .rev { display: grid; grid-template-columns: 70px 130px 1fr 2fr auto; gap: 6px; margin: 4px 0; align-items: center; }
+    @media (max-width: 640px) { .rev { grid-template-columns: 1fr 1fr; } }
+    .steps-input { min-height: 240px; }
+  </style>
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <p class="eyebrow">Business · operations</p>
+    <h1>Business Process Mapper</h1>
+    <p class="lead">Describe how a job gets done — type it, paste meeting notes, dictate it, or upload an event log — and get a swimlane process diagram, a ready-to-use SOP and ideas to make the process faster.</p>
+    <div class="row no-print">
+      <button class="btn primary" id="sample" type="button">Load sample data</button>
+      <button class="btn" id="exportJson" type="button">Download backup</button>
+      <label class="btn" style="margin:0;font-weight:400">Import backup<input type="file" id="importJson" accept=".json,application/json" hidden></label>
+      <button class="btn" id="clearAll" type="button">Clear</button>
+    </div>
+    <p class="privacy">Everything stays in this browser. Nothing is uploaded. The diagram drawing library (Mermaid) is downloaded once from a public CDN.</p>
+  </section>
+
+  <div class="tabs" data-tabs="pm">
+    <button data-tab="steps">Steps</button>
+    <button data-tab="transcript">From notes / transcript</button>
+    <button data-tab="log">From event log</button>
+    <button data-tab="diagram">Diagram</button>
+    <button data-tab="sop">SOP</button>
+    <button data-tab="improve">Improvements</button>
+  </div>
+
+  <section class="tab-panel" data-panel="steps">
+    <div class="cols-2">
+      <div>
+        <label for="stepsText">Process steps — one per line, or use arrows (→)</label>
+        <textarea id="stepsText" class="prose steps-input" placeholder="1. Customer: emails an order&#10;2. Admin: checks stock in Excel (10 min)&#10;3. If out of stock, notify customer, else create invoice in Xero&#10;4. Warehouse: picks and packs the goods"></textarea>
+        <div class="row" style="margin-top:8px">
+          <button class="btn primary" id="build" type="button">Build diagram and SOP</button>
+          <button class="btn" id="voice" type="button" hidden>Dictate the process</button>
+          <span id="voiceStatus" class="small muted"></span>
+        </div>
+      </div>
+      <div class="panel" style="margin-top:0">
+        <h3 style="margin-top:0">How to write steps</h3>
+        <ul class="small" style="padding-left:18px;margin:0">
+          <li><b>Who does it:</b> start with the role — <code>Admin: checks stock</code>, or end with <code>by the warehouse</code>. Roles become swimlanes.</li>
+          <li><b>Decisions:</b> <code>If out of stock, notify customer, else create invoice</code>. Use <code>go back to step 2</code> for loops and <code>(end)</code> where it stops.</li>
+          <li><b>Time:</b> add <code>(10 min)</code>, <code>(2 hours)</code> or <code>(1 day)</code>.</li>
+          <li><b>Systems:</b> mention the tool — Xero, Excel, email, Shopify — and it is listed in the SOP.</li>
+          <li>Words like <i>wait</i>, <i>approve</i> and <i>copy into</i> are flagged as waits, approvals and re-keying.</li>
+        </ul>
+      </div>
+    </div>
+    <h2>What was understood</h2>
+    <div id="parsed"><p class="muted">Write or load some steps, then press <b>Build diagram and SOP</b>.</p></div>
+  </section>
+
+  <section class="tab-panel" data-panel="transcript">
+    <p>Paste notes from a meeting, a screen-recording transcript (VTT or SRT from Teams, Zoom or YouTube), or drop the file. Sentences that describe actions or use words like <i>first</i>, <i>then</i>, <i>after that</i> become steps for you to tidy up.</p>
+    <div class="drop" id="tDrop">Drop a .vtt, .srt or .txt file here, or click to choose</div>
+    <label for="transcriptText">Transcript or notes</label>
+    <textarea id="transcriptText" placeholder="WEBVTT&#10;&#10;00:00:01.000 --> 00:00:05.000&#10;&lt;v Priya&gt;First the customer fills in the booking form…"></textarea>
+    <div class="row" style="margin-top:8px">
+      <button class="btn primary" id="tConvert" type="button">Turn into steps</button>
+      <button class="btn" id="tSample" type="button">Try a sample transcript</button>
+    </div>
+    <p class="small muted">This is rule-based: it picks out action sentences and removes filler words. Always read the result — people describe processes out of order.</p>
+  </section>
+
+  <section class="tab-panel" data-panel="log">
+    <p>Have a system export with one row per activity (for example a ticket, order or job history)? Upload it to see how work <i>really</i> flows: the paths cases take, how long they wait between steps and where the bottlenecks are.</p>
+    <div class="drop" id="lDrop">Drop a CSV or Excel file (case id, activity, timestamp, optional role), or click to choose</div>
+    <div class="row" style="margin-top:8px"><button class="btn" id="lSample" type="button">Use a sample event log</button></div>
+    <div id="lMap"></div>
+    <div id="lOut"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="diagram">
+    <div class="row" style="margin-top:14px">
+      <label class="row" style="margin:0;font-weight:400"><input type="checkbox" id="optLanes" checked> Swimlanes</label>
+      <label for="optDir" style="margin:0">Direction</label>
+      <select id="optDir" style="width:auto"><option value="TD">Top to bottom</option><option value="LR">Left to right</option></select>
+      <label class="row" style="margin:0;font-weight:400"><input type="checkbox" id="optFit" checked> Fit to width</label>
+    </div>
+    <div id="diagram" class="diagram fit" style="margin-top:12px" aria-live="polite"></div>
+    <div class="row" style="margin-top:8px">
+      <button class="btn" id="dlSvg" type="button">Download SVG</button>
+      <button class="btn" id="dlPng" type="button">Download PNG</button>
+      <button class="btn" id="dlMmd" type="button">Download Mermaid code</button>
+      <button class="btn" id="cpMmd" type="button">Copy Mermaid code</button>
+    </div>
+    <details style="margin-top:14px" open>
+      <summary><b>Edit the diagram code</b> (Mermaid)</summary>
+      <p class="small muted">Change labels, arrows or lanes here and press <b>Redraw</b>. Your edits are kept until you press <b>Rebuild from steps</b>. Mermaid code also pastes into GitHub, Notion, Confluence and mermaid.live.</p>
+      <textarea id="mmd" spellcheck="false" style="min-height:220px"></textarea>
+      <div class="row" style="margin-top:8px">
+        <button class="btn primary" id="redraw" type="button">Redraw</button>
+        <button class="btn" id="rebuild" type="button">Rebuild from steps</button>
+        <span id="mmdState" class="small muted"></span>
+      </div>
+    </details>
+  </section>
+
+  <section class="tab-panel" data-panel="sop">
+    <div class="panel">
+      <div class="form-grid">
+        <div><label for="m-title">Procedure title</label><input type="text" id="m-title" placeholder="Order to delivery"></div>
+        <div><label for="m-owner">Process owner (name)</label><input type="text" id="m-owner"></div>
+        <div><label for="m-ownerRole">Accountable role (A in RACI)</label><select id="m-ownerRole"></select></div>
+        <div><label for="m-version">Version</label><input type="text" id="m-version" value="1.0"></div>
+        <div><label for="m-date">Effective date</label><input type="date" id="m-date"></div>
+        <div class="full"><label for="m-purpose">Purpose (leave blank for a suggested one)</label><textarea id="m-purpose" class="prose" style="min-height:60px"></textarea></div>
+        <div class="full"><label for="m-scope">Scope (leave blank for a suggested one)</label><textarea id="m-scope" class="prose" style="min-height:60px"></textarea></div>
+      </div>
+      <h3>Revision history</h3>
+      <div id="revs"></div>
+      <button class="btn small" id="addRev" type="button">+ Add revision</button>
+    </div>
+    <div class="row">
+      <button class="btn primary" id="sopPrint" type="button">Print / save as PDF</button>
+      <button class="btn" id="sopMd" type="button">Download Markdown</button>
+      <button class="btn" id="sopHtml" type="button">Download HTML</button>
+      <button class="btn" id="sopCopy" type="button">Copy Markdown</button>
+    </div>
+    <h2>Preview</h2>
+    <div id="sopPreview" class="sop-preview"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="improve">
+    <div id="improve"></div>
+  </section>
+</main>
+<script src="../../assets/core.js"></script>
+<script src="./lib.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Inventory Forecasting — Brahaspati</title>
+  <meta name="description" content="Forecast stock needs from past sales: weekly forecasts per SKU, safety stock, reorder points, order quantities, ABC classes and dead stock. Free and private — your sales data never leaves your browser.">
+  <link rel="stylesheet" href="../../assets/style.css">
+  <style>
+    .map-grid { display: grid; gap: 8px 14px; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+    .map-grid label { margin: 4px 0 2px; }
+    .opts { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); align-items: end; }
+    .opts label.check { display: flex; gap: 6px; align-items: center; font-weight: 400; }
+    .chart { width: 100%; height: auto; display: block; }
+    .chart text { font: 11px var(--font); fill: var(--muted); }
+    .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; color: var(--muted); }
+    .legend i { display: inline-block; width: 14px; height: 3px; vertical-align: middle; margin-right: 5px; }
+    td input.stock { width: 80px; padding: 3px 6px; font-size: 14px; }
+    .num { text-align: right; white-space: nowrap; }
+  </style>
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <p class="eyebrow">Business · stock</p>
+    <h1>Inventory Forecasting</h1>
+    <p class="lead">Turn your past sales into a weekly forecast for every product, with safety stock, reorder points and a purchase plan you can send to suppliers.</p>
+    <div class="row no-print">
+      <button class="btn primary" id="sample" type="button">Load sample data</button>
+      <button class="btn" id="backup" type="button">Download backup</button>
+      <button class="btn" id="restore" type="button">Restore backup</button>
+      <button class="btn" id="clearAll" type="button">Clear everything</button>
+    </div>
+    <p class="privacy">Your sales data is read and processed inside this browser and saved only on this device. Nothing is uploaded.</p>
+  </section>
+
+  <div class="tabs" data-tabs="inv">
+    <button data-tab="import">1. Import sales</button>
+    <button data-tab="plan">2. Reorder plan</button>
+    <button data-tab="sku">Product forecast</button>
+    <button data-tab="abc">ABC &amp; slow stock</button>
+    <button data-tab="how">How it works</button>
+  </div>
+
+  <section class="tab-panel" data-panel="import">
+    <div class="panel">
+      <p>Export your sales history from your point-of-sale, Shopify, Square, Xero or a spreadsheet. One row per sale, per day or per week is fine. You need at least a <b>date</b>, a <b>product code (SKU)</b> and a <b>quantity</b>. Price, stock on hand and lead time are optional extras.</p>
+      <div class="drop" id="drop">Drop a CSV or Excel file here, or click to choose</div>
+      <p class="small muted" id="fileInfo"></p>
+    </div>
+    <div class="panel" id="mapPanel" hidden>
+      <h3 style="margin-top:0">Check the columns</h3>
+      <p class="small muted">We guessed which column is which. Fix any that are wrong, then press Build forecast.</p>
+      <div class="map-grid" id="mapGrid"></div>
+      <div class="row" style="margin-top:12px"><button class="btn primary" id="build" type="button">Build forecast</button><span class="small muted" id="buildMsg"></span></div>
+    </div>
+  </section>
+
+  <section class="tab-panel" data-panel="plan">
+    <div class="panel no-print">
+      <h3 style="margin-top:0">Settings</h3>
+      <div class="opts">
+        <div><label for="sl">Service level</label><select id="sl"><option value="0.9">90% (lean)</option><option value="0.95">95% (usual)</option><option value="0.98">98%</option><option value="0.99">99% (never run out)</option></select></div>
+        <div><label for="lead">Default lead time (days)</label><input type="number" id="lead" min="0" value="14"></div>
+        <div><label for="cover">Order enough for (weeks)</label><input type="number" id="cover" min="1" value="4"></div>
+        <div><label for="horizon">Forecast weeks</label><input type="number" id="horizon" min="4" max="26" value="12"></div>
+        <div><label for="metric">Choose method by</label><select id="metric"><option value="mae">Average error (units)</option><option value="mape">Average % error</option></select></div>
+        <label class="check"><input type="checkbox" id="useEOQ"> Use economic order quantity</label>
+      </div>
+      <div class="opts" id="eoqOpts" hidden style="margin-top:6px">
+        <div><label for="orderCost">Cost per order ($)</label><input type="number" id="orderCost" min="0" value="50"></div>
+        <div><label for="holdingPct">Holding cost (% of cost / year)</label><input type="number" id="holdingPct" min="0" value="25"></div>
+        <div><label for="costPct">Your cost (% of sell price)</label><input type="number" id="costPct" min="1" max="100" value="50"></div>
+      </div>
+      <p class="small muted">Service level is how often you want to have stock when a customer asks. Higher means more safety stock. Lead time is the days from placing an order to having stock on the shelf; a lead time column in your file overrides it.</p>
+    </div>
+    <div id="planOut"><p class="muted">Import your sales (or load the sample) to see the plan.</p></div>
+  </section>
+
+  <section class="tab-panel" data-panel="sku">
+    <div class="panel">
+      <label for="skuSel">Product</label>
+      <select id="skuSel"></select>
+      <div id="skuOut"></div>
+    </div>
+  </section>
+
+  <section class="tab-panel" data-panel="abc">
+    <div id="abcOut"><p class="muted">Import your sales first.</p></div>
+  </section>
+
+  <section class="tab-panel" data-panel="how">
+    <div class="panel">
+      <h3 style="margin-top:0">How the forecast works</h3>
+      <ol>
+        <li>Sales are added up by week (Monday to Sunday) for each product. Weeks with no sales count as zero.</li>
+        <li>Up to six methods are tried: 4, 8 and 13-week averages, exponential smoothing, Holt's trend method and, when there are at least two years of history, Holt-Winters with a yearly season.</li>
+        <li>Each method is trained on all but the last few weeks and tested on those hidden weeks. The method with the smallest error wins and is retrained on all the data.</li>
+        <li>The forecast range (shaded) is a 90% range based on how wrong the method was week to week.</li>
+        <li><b>Safety stock</b> = z × weekly forecast error × √(lead time in weeks), where z comes from your service level (1.64 for 95%).</li>
+        <li><b>Reorder point</b> = forecast demand during the lead time + safety stock. When stock falls to this level, order.</li>
+        <li><b>Order quantity</b> tops you up to the reorder point plus the weeks of cover you chose, or uses the economic order quantity √(2 × yearly demand × cost per order ÷ holding cost per unit) if you tick it.</li>
+        <li><b>ABC</b>: A items make the first 80% of the last 52 weeks' sales value, B the next 15%, C the rest.</li>
+        <li><b>Dead stock</b>: no sales for 13 weeks. <b>Slow</b>: selling under a quarter of its usual rate, or more than 26 weeks of stock on hand.</li>
+      </ol>
+      <p class="small muted">Limits: a forecast is only as good as the history. New products, promotions, stock-outs (which hide real demand) and one-off bulk orders all fool it — use your judgement on top. Nothing here runs on a schedule; re-import fresh sales each week or month.</p>
+    </div>
+  </section>
+</main>
+<script src="../../assets/core.js"></script>
+<script src="./lib.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

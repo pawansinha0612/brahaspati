@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Returns Intelligence — Brahaspati</title>
+  <meta name="description" content="Find out why customers send products back, which items cost you most, and what to fix. Return rates by product, size, channel and month, true cost of returns, size problems and a printable report. Free and private.">
+  <link rel="stylesheet" href="../../assets/style.css">
+  <style>
+    .slots { display: grid; gap: 14px; grid-template-columns: 1fr 1fr; }
+    @media (max-width: 760px) { .slots { grid-template-columns: 1fr; } }
+    .slots .panel { margin: 0; }
+    .map-grid { display: grid; gap: 8px 14px; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
+    .map-grid label { margin: 4px 0 2px; }
+    .opts { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); align-items: end; }
+    .rec h3 { margin: 0 0 6px; }
+  </style>
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <p class="eyebrow">Sellers · returns</p>
+    <h1>Returns Intelligence</h1>
+    <p class="lead">Find out why customers send products back, which items cost you the most, and what to fix — size charts, photos, packaging or the product itself.</p>
+    <div class="row no-print">
+      <button class="btn primary" id="sample" type="button">Load sample data</button>
+      <button class="btn" id="backup" type="button">Download backup</button>
+      <button class="btn" id="restore" type="button">Restore backup</button>
+      <button class="btn" id="clearAll" type="button">Clear everything</button>
+    </div>
+    <p class="privacy">Your orders and returns are analysed inside this browser and saved only on this device. Customer details never leave your computer.</p>
+  </section>
+
+  <div class="tabs" data-tabs="ri">
+    <button data-tab="import">1. Import</button>
+    <button data-tab="overview">2. Overview</button>
+    <button data-tab="products">Products to fix</button>
+    <button data-tab="breakdown">Breakdown</button>
+    <button data-tab="customers">Frequent returners</button>
+    <button data-tab="how">How it works</button>
+  </div>
+
+  <section class="tab-panel" data-panel="import">
+    <p class="muted">Export orders (one row per item) and returns from Shopify, WooCommerce, Amazon, eBay, a returns app (Loop, AfterShip, ReturnGO) or a spreadsheet. The returns file is required; the orders file lets us work out return <i>rates</i>.</p>
+    <div class="slots">
+      <div class="panel"><h3 style="margin-top:0">Orders <span class="small muted">(optional, recommended)</span></h3><div class="drop" id="dropO">Drop orders CSV / Excel, or click</div><p class="small muted" id="infoO"></p><div id="mapO"></div></div>
+      <div class="panel"><h3 style="margin-top:0">Returns <span class="small muted">(required)</span></h3><div class="drop" id="dropR">Drop returns CSV / Excel, or click</div><p class="small muted" id="infoR"></p><div id="mapR"></div></div>
+    </div>
+    <div class="panel">
+      <h3 style="margin-top:0">Costs</h3>
+      <div class="opts">
+        <div><label for="handling">Handling per return ($)</label><input type="number" id="handling" min="0" step="0.5" value="8"></div>
+        <div><label for="costPct">Your cost price (% of sell price)</label><input type="number" id="costPct" min="1" max="100" value="45"></div>
+      </div>
+      <p class="small muted">Handling covers staff time to receive, check and restock a return. Items that can't be resold are written off at your cost price; without a condition column we assume damaged items are written off, poor-quality ones 60%, and others 5–10%.</p>
+      <div class="row"><button class="btn primary" id="analyse" type="button">Analyse returns</button><span class="small muted" id="msg"></span></div>
+    </div>
+  </section>
+
+  <section class="tab-panel" data-panel="overview"><div id="ovOut"><p class="muted">Import returns (or load the sample) first.</p></div></section>
+  <section class="tab-panel" data-panel="products"><div id="prOut"><p class="muted">Import returns first.</p></div></section>
+  <section class="tab-panel" data-panel="breakdown">
+    <div class="panel no-print"><label for="dim">Break down by</label><select id="dim" style="max-width:280px"></select></div>
+    <div id="bdOut"><p class="muted">Import returns first.</p></div>
+  </section>
+  <section class="tab-panel" data-panel="customers"><div id="cuOut"><p class="muted">Import returns first.</p></div></section>
+
+  <section class="tab-panel" data-panel="how">
+    <div class="panel">
+      <h3 style="margin-top:0">How it works</h3>
+      <ol>
+        <li>Each return is matched to its order line by order ID and SKU, so it picks up the category, size, channel and customer.</li>
+        <li><b>Return rate</b> = units returned ÷ units sold, by product, size, category, channel and order month.</li>
+        <li><b>Cost of a return</b> = refund + return shipping + handling + write-off (cost price of items that can't be resold).</li>
+        <li><b>Reasons</b>: reason codes and customer comments are sorted into themes — too small, too large, size/fit, damaged/faulty, not as described, poor quality, wrong item, late, changed mind. The code wins; the comment fills gaps and tells "too small" from "too large".</li>
+        <li><b>Size signal</b>: a product "runs small" when at least 5 returns say small or large and 65%+ of them say small (and the other way for large).</li>
+        <li><b>Fix or delist</b>: products are ranked by total return cost. A delist suggestion needs a return rate of at least 30% and 1.75× your store average, with faults or quality as the main reason.</li>
+        <li><b>Frequent returners</b>: customers with 3+ returned items and at least half of what they bought sent back.</li>
+      </ol>
+      <p class="small muted">Limits: refunds are not all lost money — you usually get the item back — so the "cost" figure is the cash that left, not lost profit. Under Australian Consumer Law customers are entitled to a remedy for faulty items whatever your policy says. Frequent returners are a prompt for a conversation, not proof of abuse.</p>
+    </div>
+  </section>
+</main>
+<script src="../../assets/core.js"></script>
+<script src="./lib.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

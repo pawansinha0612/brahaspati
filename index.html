@@ -23,8 +23,10 @@
 <script src="assets/core.js"></script>
 <script>
 (function () {
-  var CATS = [['business', 'Business', 'For shops, sole traders and small teams.'], ['creators', 'Creators', 'Plan, write and measure your content.'],
-    ['personal', 'Personal', 'Money, jobs, learning and your own files.'], ['utilities', 'Utilities', 'Quick everyday converters and helpers.']];
+  var CATS = [['business', 'Business', 'For shops, sole traders and small teams.'], ['industry', 'Industry apps', 'Ready-made systems for trades, property, food, fitness, cleaning and transport.'],
+    ['ecommerce', 'Online sellers', 'Listings, prices, returns, reviews and digital products.'], ['creators', 'Creators', 'Plan, write and measure your content.'],
+    ['personal', 'Personal', 'Money, jobs, learning and your own files.'], ['utilities', 'Utilities', 'Quick everyday converters and helpers.'],
+    ['developers', 'Developers & testers', 'Code, data, logs, traces and test quality.']];
   var apps = [];
   function render() {
     var q = B.$('#q').value.trim().toLowerCase();

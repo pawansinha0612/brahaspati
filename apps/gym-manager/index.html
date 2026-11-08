@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gym &amp; Studio Manager — Brahaspati</title>
+  <meta name="description" content="Free tool for gyms and fitness studios: members and memberships with holds, renewal reminders, weekly class timetable, bookings with capacity and automatic waitlist, check-ins, trainer schedules and a retention dashboard. Data stays in your browser.">
+  <link rel="stylesheet" href="../../assets/style.css">
+  <link rel="stylesheet" href="../../forge/forge.css">
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <p class="eyebrow">Industry · fitness</p>
+    <h1>Gym &amp; Studio Manager</h1>
+    <p class="lead">Members, memberships and holds, a weekly class timetable with capacity and an automatic waitlist, a front-desk check-in, trainer hours, renewal reminders, and a retention view that shows who hasn't been in lately.</p>
+  </section>
+  <div id="app"></div>
+  <details class="panel">
+    <summary><b>How it works and its limits</b></summary>
+    <ul class="small">
+      <li>Fixed terms end after the minimum term (annual = 12 months, class packs after their valid days). Every hold day pushes the end date and the next payment date back by a day; overlapping holds are counted once.</li>
+      <li>Ongoing plans (weekly, fortnightly, monthly with no lock-in) have no end date — the Renewals tab lists the next payment dates instead, and you can add them to your calendar as an .ics file.</li>
+      <li>Booking a full class puts the member on the waitlist. When someone cancels, the first person waiting is moved in automatically — but this app cannot text or email them, so let them know.</li>
+      <li>"At risk" = an active membership and no check-in or attended class for 14 days or more (members on hold are left out).</li>
+      <li><b>Health information:</b> only record that a pre-exercise screening was received and its date. Keep the signed form itself somewhere secure — do not type medical details in here.</li>
+      <li>Everything lives in this browser: no member app or online booking, no card payments or direct debits, no sync between devices. Reminders need this page open, or download the .ics file into your calendar.</li>
+    </ul>
+  </details>
+</main>
+<script src="../../assets/core.js"></script>
+<script src="../../forge/forge-core.js"></script>
+<script src="../../forge/forge-ui.js"></script>
+<script src="./lib.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

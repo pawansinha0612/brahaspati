@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pet Business Manager — Brahaspati</title>
+  <meta name="description" content="Free tool for groomers, dog walkers and pet sitters: owners and pets, vaccination reminders, size-based pricing, bookings with double-booking checks, recurring walks, pupdate report cards, walk packages and GST invoices. Data stays in your browser.">
+  <link rel="stylesheet" href="../../assets/style.css">
+  <link rel="stylesheet" href="../../forge/forge.css">
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <p class="eyebrow">Industry · pets</p>
+    <h1>Pet Business Manager</h1>
+    <p class="lead">For groomers, dog walkers and pet sitters. Keep every pet's care notes, allergies and vaccinations in one place, price by size, book weekly walks, catch double bookings and overdue vaccinations, send a "pupdate" after each visit, and track walk passes and invoices.</p>
+  </section>
+  <div id="app"></div>
+  <details class="panel">
+    <summary><b>How it works and its limits</b></summary>
+    <ul class="small">
+      <li>Pet size comes from weight: small under 10 kg, medium 10–25 kg, large 25–45 kg, giant 45 kg and over. Choosing a pet and a service fills the price, length and visit checklist.</li>
+      <li>Vaccination reminders appear 30 days before the next due date. If you leave "Next due" empty, it uses a usual interval (C3 every 3 years, other vaccines yearly) — always prefer the date on the vet certificate. Bookings for pets whose vaccination will be overdue on the day are flagged.</li>
+      <li>A staff member cannot be booked for two things at once, unless both bookings are ticked as a group walk.</li>
+      <li>Weekly walks: open a booking and choose <b>Repeat…</b>. Packages count every booking linked to them except cancelled ones (no-shows use a visit).</li>
+      <li>Groom reminders use the last finished groom plus each pet's groom interval (6–8 weeks is typical).</li>
+      <li>Prices are entered including GST; invoices show GST as 1/11 of the total when you are registered. This is not accounting software.</li>
+      <li>Everything lives in this browser: no login, no sync between phones, no online booking for customers and no automatic texts. Reminders need this page open, or download the .ics file into your calendar. Share a pupdate by copying its text or downloading it as HTML.</li>
+    </ul>
+  </details>
+</main>
+<script src="../../assets/core.js"></script>
+<script src="../../forge/forge-core.js"></script>
+<script src="../../forge/forge-ui.js"></script>
+<script src="./lib.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

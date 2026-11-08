@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Product Listing Optimiser — Brahaspati</title>
+  <meta name="description" content="Free listing checker for Amazon, eBay, Etsy and Shopify / Google Shopping: title length and structure, keywords, risky claims, bullets, tags and missing attributes, with a score, fixes, a template generator and bulk CSV checks.">
+  <link rel="stylesheet" href="../../assets/style.css">
+  <style>
+    .form-grid { display: grid; gap: 0 14px; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+    .form-grid .full { grid-column: 1 / -1; }
+    .counter { font-size: 12px; color: var(--muted); float: right; font-weight: 400; }
+    .score { font-size: 40px; font-weight: 800; line-height: 1; }
+    .issue { border-left: 4px solid var(--line); padding: 6px 10px; margin: 8px 0; background: var(--panel); border-radius: 0 6px 6px 0; }
+    .issue.bad { border-color: var(--bad); } .issue.warn { border-color: var(--warn); } .issue.info { border-color: var(--accent); }
+    .issue .area { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+    .issue p { margin: 2px 0; color: var(--ink); }
+    .issue .fix { color: var(--muted); font-size: 14px; }
+    .gen-out pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+    .sticky-res { position: sticky; top: 8px; }
+    @media (max-width: 760px) { .sticky-res { position: static; } }
+    textarea.short { min-height: 70px; }
+    td.num, th.num { text-align: right; }
+    .bulk-row { cursor: pointer; }
+    .cols-2 > div { min-width: 0; }
+    details summary { cursor: pointer; }
+  </style>
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <p class="eyebrow">Sellers · listings</p>
+    <h1>Product Listing Optimiser</h1>
+    <p class="lead">Check a product listing against Amazon, eBay, Etsy or Shopify / Google Shopping rules before you publish: title length and order, keywords, risky claims, bullets, tags and missing details. Get a score, plain-English fixes and template-written titles and bullets.</p>
+    <div class="row no-print">
+      <button class="btn primary" id="sample" type="button">Load sample data</button>
+    </div>
+    <p class="privacy">Your listings are saved in this browser only. Limits shown are commonly published figures — marketplaces change their rules, so check the current rules for your category before publishing.</p>
+  </section>
+
+  <div class="tabs" data-tabs="lo">
+    <button data-tab="check">Check a listing</button>
+    <button data-tab="generate">Write from details</button>
+    <button data-tab="bulk">Bulk CSV</button>
+    <button data-tab="rules">Marketplace rules</button>
+  </div>
+
+  <section class="tab-panel" data-panel="check">
+    <div class="cols-2" style="margin-top:14px">
+      <div>
+        <div class="panel">
+          <div class="form-grid">
+            <div><label for="mk">Marketplace</label><select id="mk"><option value="amazon">Amazon</option><option value="ebay">eBay</option><option value="etsy">Etsy</option><option value="google">Shopify / Google Shopping</option></select></div>
+            <div><label for="saved">Saved listings</label><select id="saved"><option value="">—</option></select></div>
+            <div class="full"><label for="title">Title <span class="counter" id="titleCount"></span></label><textarea id="title" class="prose short" rows="2"></textarea></div>
+            <div class="full" id="bulletsWrap"><label for="bullets">Bullet points — one per line <span class="counter" id="bulletCount"></span></label><textarea id="bullets" class="prose"></textarea></div>
+            <div class="full"><label for="description">Description <span class="counter" id="descCount"></span></label><textarea id="description" class="prose"></textarea></div>
+            <div class="full" id="tagsWrap"><label for="tags">Tags — separated by commas <span class="counter" id="tagCount"></span></label><input type="text" id="tags"></div>
+            <div class="full" id="stWrap"><label for="searchTerms">Backend search terms (Amazon) <span class="counter" id="stCount"></span></label><input type="text" id="searchTerms"></div>
+            <div class="full"><label for="keywords">Target keywords — main one first, separated by commas</label><input type="text" id="keywords" placeholder="insulated water bottle, stainless steel bottle"></div>
+          </div>
+          <h3>Product details</h3>
+          <div class="form-grid">
+            <div><label for="brand">Brand</label><input type="text" id="brand"></div>
+            <div><label for="product">Product type</label><input type="text" id="product" placeholder="Water bottle"></div>
+            <div><label for="size">Size</label><input type="text" id="size"></div>
+            <div><label for="colour">Colour</label><input type="text" id="colour"></div>
+            <div><label for="material">Material</label><input type="text" id="material"></div>
+            <div><label for="dimensions">Dimensions</label><input type="text" id="dimensions"></div>
+            <div><label for="care">Care</label><input type="text" id="care"></div>
+            <div><label for="quantity">Quantity / pack</label><input type="text" id="quantity"></div>
+          </div>
+          <div class="row" style="margin-top:12px">
+            <button class="btn primary" id="saveListing" type="button">Save listing</button>
+            <button class="btn" id="fixTitle" type="button">Apply safe title fixes</button>
+            <button class="btn" id="newListing" type="button">Clear</button>
+            <button class="btn" id="delListing" type="button">Delete saved</button>
+          </div>
+          <div id="aiWrap" class="row" style="margin-top:8px"></div>
+          <div id="aiOut"></div>
+        </div>
+      </div>
+      <div><div class="sticky-res" id="result"></div></div>
+    </div>
+  </section>
+
+  <section class="tab-panel" data-panel="generate">
+    <div class="panel" style="margin-top:14px">
+      <p class="small muted" style="margin-top:0">Fill in what you know. The titles, bullets and description are built from templates using only what you type — nothing is made up.</p>
+      <div class="form-grid">
+        <div><label for="g-brand">Brand</label><input type="text" id="g-brand"></div>
+        <div><label for="g-product">Product type</label><input type="text" id="g-product"></div>
+        <div><label for="g-keyFeature">Key feature</label><input type="text" id="g-keyFeature" placeholder="Keeps drinks cold 24 hours"></div>
+        <div><label for="g-material">Material</label><input type="text" id="g-material"></div>
+        <div><label for="g-size">Size</label><input type="text" id="g-size"></div>
+        <div><label for="g-colour">Colour</label><input type="text" id="g-colour"></div>
+        <div><label for="g-quantity">Quantity / pack</label><input type="text" id="g-quantity"></div>
+        <div><label for="g-audience">For whom</label><input type="text" id="g-audience" placeholder="kids, runners…"></div>
+        <div><label for="g-dimensions">Dimensions / weight</label><input type="text" id="g-dimensions"></div>
+        <div><label for="g-care">Care</label><input type="text" id="g-care"></div>
+        <div class="full"><label for="g-useCase">Good for (uses / occasions)</label><input type="text" id="g-useCase" placeholder="the gym, school and hiking"></div>
+        <div class="full"><label for="g-inBox">In the box</label><input type="text" id="g-inBox"></div>
+        <div class="full"><label for="g-keywords">Target keywords</label><input type="text" id="g-keywords"></div>
+        <div class="full"><label for="g-features">Features — one per line as <code>feature — benefit</code></label><textarea id="g-features" class="prose" placeholder="Leak-proof lid — throw it in your bag without spills"></textarea></div>
+      </div>
+      <div class="row" style="margin-top:10px"><button class="btn primary" id="genBtn" type="button">Write listing</button></div>
+    </div>
+    <div id="genOut" class="gen-out"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="bulk">
+    <div class="panel" style="margin-top:14px">
+      <p style="margin-top:0">Check many listings at once from a CSV or Excel export. Recognised columns: <code>sku, marketplace, title, brand, product, colour, size, material, dimensions, care, quantity, bullet1…bullet5</code> (or one <code>bullets</code> column split by <code>|</code>), <code>description, tags, keywords, searchTerms</code>. Rows without a marketplace use the one chosen here.</p>
+      <div class="row"><label for="bulkMk" style="margin:0">Default marketplace</label><select id="bulkMk" style="max-width:240px"><option value="amazon">Amazon</option><option value="ebay">eBay</option><option value="etsy">Etsy</option><option value="google">Shopify / Google Shopping</option></select>
+        <button class="btn small" id="bulkTemplate" type="button">Download template CSV</button><button class="btn small" id="bulkSample" type="button">Try sample CSV</button></div>
+      <div class="drop" id="bulkDrop" style="margin-top:10px">Drop a CSV / Excel file here, or click to choose</div>
+    </div>
+    <div id="bulkOut"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="rules">
+    <p class="small muted" style="margin-top:14px">Commonly published limits as at late 2026. <strong>Check the current marketplace rules</strong> for your category — they change, and some categories (clothing, beauty, food, toys) have extra rules.</p>
+    <div id="rulesOut"></div>
+  </section>
+</main>
+<script src="../../assets/core.js"></script>
+<script src="../../assets/ai.js"></script>
+<script src="./lib.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

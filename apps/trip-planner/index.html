@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Smart Trip Planner — Brahaspati</title>
+  <meta name="description" content="Free family trip planner: add activities with opening hours and prices, and get a day-by-day itinerary that respects travel time, kids' naps, pace and budget. Packing list, budget tracker, print and calendar export.">
+  <link rel="stylesheet" href="../../assets/style.css">
+  <style>
+    .form-grid { display: grid; gap: 0 14px; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
+    .form-grid .full { grid-column: 1 / -1; }
+    .check { display: flex; gap: 6px; align-items: center; font-weight: 400; margin: 0; }
+    .days-check { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+    .trav { display: grid; grid-template-columns: 1fr 90px auto; gap: 8px; align-items: center; margin: 6px 0; }
+    .day h3 { margin: 0; }
+    .tl { list-style: none; padding: 0; margin: 10px 0 0; }
+    .tl li { display: grid; grid-template-columns: 96px 1fr; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+    .tl li .t { font-variant-numeric: tabular-nums; color: var(--muted); }
+    .tl li.activity .t { color: var(--ink); font-weight: 600; }
+    .tl li.travel, .tl li.rest, .tl li.block { color: var(--muted); font-size: 13px; }
+    .pack-group { break-inside: avoid; }
+    .pack-group label { font-weight: 400; display: flex; gap: 8px; align-items: flex-start; margin: 4px 0; }
+    .pack-group input:checked + span { text-decoration: line-through; color: var(--muted); }
+    .cols-pack { columns: 2 260px; column-gap: 24px; }
+    .line { display: grid; grid-template-columns: minmax(0, 1fr) 110px auto; gap: 8px; align-items: center; margin: 6px 0; }
+    .line input, .trav input { min-width: 0; }
+    .cols-2 > * { min-width: 0; }
+    td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .file-btn { position: relative; overflow: hidden; }
+    .file-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+    .pill-mute { font-size: 12px; padding: 1px 8px; border-radius: 99px; font-weight: 600; background: var(--soft); color: var(--muted); }
+  </style>
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <p class="eyebrow">Personal · travel</p>
+    <h1>Smart Trip Planner</h1>
+    <p class="lead">Tell it who’s going, your budget and pace, add the things you’d like to do with their opening hours and prices — and it builds a realistic day-by-day plan with travel time, lunch, kids’ naps and rest breaks.</p>
+    <div class="row no-print">
+      <button class="btn primary" id="goTrip" type="button">Start a trip</button>
+      <button class="btn" id="sample" type="button">Load sample data</button>
+    </div>
+    <p class="privacy">Your plans stay in this browser. This app doesn’t look up live opening hours, prices or weather — you enter them, and starter ideas are generic examples to edit.</p>
+  </section>
+
+  <div class="tabs" data-tabs="trip">
+    <button data-tab="trip">Trip</button>
+    <button data-tab="acts">Activities</button>
+    <button data-tab="plan">Itinerary</button>
+    <button data-tab="pack">Packing</button>
+    <button data-tab="budget">Budget</button>
+  </div>
+
+  <section class="tab-panel" data-panel="trip">
+    <div class="panel">
+      <h2 style="margin-top:0">Trip details</h2>
+      <div class="form-grid" id="tripForm">
+        <div class="full"><label for="t-destination">Destination</label><input type="text" id="t-destination" placeholder="e.g. Gold Coast"></div>
+        <div><label for="t-start">First day</label><input type="date" id="t-start"></div>
+        <div><label for="t-end">Last day</label><input type="date" id="t-end"></div>
+        <div><label for="t-budget">Total budget (AUD, 0 = no limit)</label><input type="number" id="t-budget" min="0" step="50"></div>
+        <div><label for="t-transport">Getting around</label><select id="t-transport"><option value="car">Car</option><option value="public">Public transport</option><option value="flights">Flying in, taxis/rideshare there</option></select></div>
+        <div><label for="t-pace">Pace</label><select id="t-pace"><option value="relaxed">Relaxed (up to 2 things a day)</option><option value="normal">Normal (up to 3)</option><option value="packed">Packed (up to 5)</option></select></div>
+        <div><label for="t-tripType">Kind of trip</label><select id="t-tripType"><option value="city">City</option><option value="beach">Beach</option><option value="themepark">Theme parks</option><option value="nationalpark">National park</option><option value="other">Other</option></select></div>
+        <div><label for="t-weather">Expected weather</label><select id="t-weather"><option value="hot">Hot</option><option value="warm">Warm</option><option value="mild">Mild</option><option value="cold">Cold</option><option value="mixed">Mixed / showers</option></select></div>
+        <div><label for="t-dayStart">Day starts</label><input type="time" id="t-dayStart"></div>
+        <div><label for="t-dayEnd">Day ends</label><input type="time" id="t-dayEnd"></div>
+        <div><label for="t-baseArea">Area you’re staying in</label><input type="text" id="t-baseArea" placeholder="e.g. Broadbeach"></div>
+        <div><label class="check" style="margin-top:34px"><input type="checkbox" id="t-lunch"> Keep a lunch break</label></div>
+        <div><label for="t-napMins">Nap for children under 5 (minutes, 0 = none)</label><input type="number" id="t-napMins" min="0" step="15"></div>
+        <div><label for="t-napStart">Nap starts</label><input type="time" id="t-napStart"></div>
+      </div>
+      <h3>Who’s going</h3>
+      <p class="small muted">Ages set ticket prices (under 3 free, 3–15 child, 16+ adult), kid-friendly filtering, rest breaks and the packing list.</p>
+      <div id="travellers"></div>
+      <button class="btn small" type="button" id="addTrav">+ Add traveller</button>
+    </div>
+    <div class="panel">
+      <h2 style="margin-top:0">Save or share this plan</h2>
+      <div class="row"><button class="btn" type="button" id="backup">Download plan (JSON)</button><span class="btn file-btn">Open a saved plan<input type="file" id="restore" accept=".json,application/json"></span><button class="btn" type="button" id="wipe">Start over</button></div>
+    </div>
+  </section>
+
+  <section class="tab-panel" data-panel="acts">
+    <div class="panel" id="actPanel">
+      <h2 style="margin-top:0" id="actTitle">Add an activity</h2>
+      <div class="form-grid">
+        <div class="full"><label for="a-name">Activity *</label><input type="text" id="a-name" placeholder="e.g. Zoo"></div>
+        <div><label for="a-area">Area / suburb</label><input type="text" id="a-area" list="areaList" placeholder="Same area = less travel"><datalist id="areaList"></datalist></div>
+        <div><label for="a-duration">How long (minutes)</label><input type="number" id="a-duration" min="15" step="15" value="120"></div>
+        <div><label for="a-open">Opens</label><input type="time" id="a-open" value="09:00"></div>
+        <div><label for="a-close">Closes</label><input type="time" id="a-close" value="17:00"></div>
+        <div><label for="a-costAdult">Cost per adult (AUD)</label><input type="number" id="a-costAdult" min="0" step="0.5" value="0"></div>
+        <div><label for="a-costChild">Cost per child 3–15</label><input type="number" id="a-costChild" min="0" step="0.5" value="0"></div>
+        <div><label for="a-priority">Priority</label><select id="a-priority"><option value="must">Must do</option><option value="want" selected>Would like</option><option value="maybe">If time</option></select></div>
+        <div><label for="a-setting">Indoor or outdoor</label><select id="a-setting"><option value="outdoor">Outdoor</option><option value="indoor">Indoor</option></select></div>
+        <div><label for="a-date">Fixed date (optional)</label><input type="date" id="a-date"></div>
+        <div><label class="check" style="margin-top:34px"><input type="checkbox" id="a-kid" checked> Kid-friendly</label></div>
+        <div class="full"><label>Closed on</label><div class="days-check" id="a-closed"></div></div>
+        <div class="full"><label for="a-notes">Notes</label><input type="text" id="a-notes" placeholder="e.g. Book online; free for under 4s"></div>
+      </div>
+      <div class="row" style="margin-top:12px"><button class="btn primary" type="button" id="a-save">Add activity</button><button class="btn" type="button" id="a-cancel">Clear</button></div>
+    </div>
+    <div class="panel">
+      <h2 style="margin-top:0">Starter ideas</h2>
+      <p class="small muted">Generic ideas to get you going — <b>not</b> real places, prices or hours. Rename them to real places and check times and prices before you rely on them.</p>
+      <div class="row"><select id="tplPick" style="width:auto" aria-label="Starter ideas"></select><button class="btn" type="button" id="tplAdd">Add these ideas</button></div>
+    </div>
+    <div class="panel"><h2 style="margin-top:0">Your activities</h2><div id="actList"></div></div>
+  </section>
+
+  <section class="tab-panel" data-panel="plan">
+    <div class="stat-row" id="planStats" style="margin-top:14px"></div>
+    <div id="warnings"></div>
+    <div class="row no-print" style="margin:12px 0">
+      <button class="btn primary" type="button" id="printPlan">Print itinerary</button>
+      <button class="btn" type="button" id="dlPlan">Download (HTML)</button>
+      <button class="btn" type="button" id="icsPlan">Add to calendar (.ics)</button>
+    </div>
+    <div id="days"></div>
+    <div class="panel" id="unschedPanel"><h2 style="margin-top:0">Not scheduled</h2><div id="unsched"></div></div>
+    <p class="small muted">How it works: must-dos go first, then the rest. Each activity goes to a day already in the same area if it fits (less travel), otherwise the emptiest day. It keeps to opening hours, your day times, lunch, naps and pace, adds travel time between areas, a 20-minute rest after long outings when kids are under 10, and skips outdoor things on days you mark as rainy. Long outings (2.5 h+) include lunch, and 4 h+ include the nap.</p>
+  </section>
+
+  <section class="tab-panel" data-panel="pack">
+    <div class="panel">
+      <div class="row"><h2 style="margin:0">Packing list</h2><button class="btn small" type="button" id="printPack">Print</button><button class="btn small" type="button" id="resetPack">Untick all</button></div>
+      <p class="small muted">Built from your weather, travellers’ ages, kind of trip and transport. Ticks are saved.</p>
+      <div id="pack" class="cols-pack"></div>
+      <div class="row" style="margin-top:10px"><input type="text" id="packAdd" placeholder="Add your own item" style="max-width:260px"><button class="btn small" type="button" id="packAddBtn">Add</button></div>
+    </div>
+  </section>
+
+  <section class="tab-panel" data-panel="budget">
+    <div class="stat-row" id="budStats" style="margin-top:14px"></div>
+    <div class="cols-2">
+      <div class="panel">
+        <h2 style="margin-top:0">Planned costs</h2>
+        <p class="small muted">Activities are added from the itinerary automatically. Whatever’s left of your budget after these lines is what the planner can spend on activities.</p>
+        <div id="costLines"></div>
+        <button class="btn small" type="button" id="addCost">+ Add a cost line</button>
+      </div>
+      <div class="panel">
+        <h2 style="margin-top:0">Money spent</h2>
+        <div class="form-grid">
+          <div><label for="s-label">What</label><input type="text" id="s-label"></div>
+          <div><label for="s-cat">Category</label><select id="s-cat"></select></div>
+          <div><label for="s-amount">Amount (AUD)</label><input type="number" id="s-amount" min="0" step="0.01"></div>
+          <div style="align-self:end"><button class="btn primary" type="button" id="s-add">Add</button></div>
+        </div>
+        <div id="spends" style="margin-top:10px"></div>
+      </div>
+    </div>
+    <div class="panel"><h2 style="margin-top:0">Planned vs spent</h2><div id="budTable"></div></div>
+  </section>
+</main>
+<script src="../../assets/core.js"></script>
+<script src="../home-inventory/vault-kit.js"></script>
+<script src="./lib.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

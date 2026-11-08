@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Subscription Leak Detector — Brahaspati</title>
+  <meta name="description" content="Free: import your bank statement CSV and find every recurring charge, price rise and forgotten subscription, with yearly cost, cancellation checklists and trial reminders. Runs in your browser.">
+  <link rel="stylesheet" href="../../assets/style.css">
+  <style>
+    .sub { display: grid; gap: 6px 14px; grid-template-columns: 1fr auto; align-items: start; }
+    .sub h3 { margin: 0; font-size: 17px; overflow-wrap: anywhere; }
+    .sub .amt { text-align: right; font-variant-numeric: tabular-nums; }
+    .sub .amt b { font-size: 18px; }
+    .sub .meta, .sub .choice { grid-column: 1 / -1; }
+    .choice { display: flex; gap: 6px; flex-wrap: wrap; }
+    .choice button[aria-pressed="true"] { background: var(--brand); color: var(--brand-ink); border-color: var(--brand); }
+    .map-grid { display: grid; gap: 0 12px; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+    .check { display: flex; gap: 6px; align-items: center; font-weight: 400; margin: 0; }
+    .form-grid { display: grid; gap: 0 14px; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+    ol.steps li { margin: 4px 0; }
+    .file-btn { position: relative; overflow: hidden; }
+    .file-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  </style>
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <p class="eyebrow">Personal · money</p>
+    <h1>Subscription Leak Detector</h1>
+    <p class="lead">Import a bank statement and see every repeating charge — streaming, apps, gyms, phone plans — with what each one costs you a year, which ones went up in price, and a simple plan to cancel the ones you don’t use.</p>
+    <div class="row no-print">
+      <button class="btn primary" id="goImport" type="button">Import a statement</button>
+      <button class="btn" id="sample" type="button">Load sample data</button>
+    </div>
+    <p class="privacy">Your statement is read inside this browser and never uploaded. Uses the same statement reader as the <a href="../finance/">Money Command Centre</a>.</p>
+  </section>
+
+  <div class="tabs" data-tabs="subs">
+    <button data-tab="found">Recurring charges</button>
+    <button data-tab="cancel">Cancel plan</button>
+    <button data-tab="trials">Free trials</button>
+    <button data-tab="import">Import</button>
+  </div>
+
+  <section class="tab-panel" data-panel="found">
+    <div class="stat-row" id="stats" style="margin-top:14px"></div>
+    <div class="panel">
+      <p style="margin-top:0">A bank statement can’t show whether you still <i>use</i> something. For each charge, decide: <b>Keep</b>, <b>Cancel</b> or <b>Review</b> (not sure — remind me before the next charge).</p>
+      <div class="row"><select id="show" aria-label="Show" style="width:auto">
+        <option value="all">All active</option><option value="none">Not decided yet</option><option value="up">Price went up</option><option value="cancel">Marked cancel</option><option value="review">Marked review</option><option value="keep">Marked keep</option><option value="stopped">Stopped charging</option>
+      </select></div>
+      <div id="list" style="margin-top:10px"></div>
+      <p class="small muted">Found from charges to the same business on a regular cycle (weekly to yearly). Needs about three months of history; yearly charges need more than a year. Rent and transfers are left out.</p>
+    </div>
+  </section>
+
+  <section class="tab-panel" data-panel="cancel">
+    <div class="panel">
+      <h2 style="margin-top:0">Your cancel plan</h2>
+      <p class="small muted">Steps are general guidance. Links open a web search so you can find the business’s own help page — we don’t partner with or link to any service.</p>
+      <div id="plan"></div>
+      <div class="row" style="margin-top:10px"><button class="btn" type="button" id="reviewIcs">Remind me before the next charges (.ics)</button><button class="btn" type="button" id="printPlan">Print plan</button></div>
+    </div>
+  </section>
+
+  <section class="tab-panel" data-panel="trials">
+    <div class="panel">
+      <h2 style="margin-top:0">Free trials to cancel in time</h2>
+      <p class="small muted">Trials don’t show on a statement until they charge, so add them here when you sign up. The calendar file reminds you two days before each trial ends.</p>
+      <form id="trialForm" class="form-grid">
+        <div><label for="t-name">Service</label><input type="text" id="t-name" required placeholder="e.g. Paramount+"></div>
+        <div><label for="t-ends">Trial ends</label><input type="date" id="t-ends" required></div>
+        <div><label for="t-price">Then costs (AUD)</label><input type="number" id="t-price" min="0" step="0.01"></div>
+        <div><label for="t-cad">Every</label><select id="t-cad"><option>Monthly</option><option>Yearly</option><option>Weekly</option></select></div>
+        <div style="align-self:end"><button class="btn primary" type="submit">Add trial</button></div>
+      </form>
+      <div id="trials" style="margin-top:12px"></div>
+      <div class="row" style="margin-top:10px"><button class="btn" type="button" id="trialIcs">Add trial reminders to my calendar (.ics)</button></div>
+    </div>
+  </section>
+
+  <section class="tab-panel" data-panel="import">
+    <div class="panel">
+      <h2 style="margin-top:0">Import a bank statement</h2>
+      <p>In your bank’s app or website, export your transactions as <b>CSV</b> (or Excel) for the last 3–12 months. CommBank, NAB, Westpac, ANZ, ING, Macquarie, Up and most others are recognised. Importing the same statement twice won’t double up. Credit card statements work too.</p>
+      <div class="drop" id="drop">Drop CSV or Excel files here, or click to choose</div>
+      <details style="margin-top:10px"><summary>Or paste CSV text</summary>
+        <textarea id="paste" placeholder="08/11/2026,-22.99,&quot;NETFLIX.COM MELBOURNE&quot;,+1530.20"></textarea>
+        <button class="btn" type="button" id="pasteGo">Read pasted text</button>
+      </details>
+    </div>
+    <div class="panel" id="mapPanel" hidden>
+      <h2 style="margin-top:0">Check the columns</h2>
+      <p id="mapMsg"></p>
+      <div class="map-grid" id="mapSelects"></div>
+      <div class="row" style="margin-top:10px">
+        <label class="check"><input type="checkbox" id="mapHeader"> First row is a header</label>
+        <label class="check"><input type="checkbox" id="mapFlip"> Spending shows as positive numbers in this file</label>
+      </div>
+      <div id="mapPreview" style="margin-top:10px"></div>
+      <div class="row" style="margin-top:10px"><button class="btn primary" type="button" id="mapGo">Import</button><button class="btn" type="button" id="mapCancel">Cancel</button></div>
+    </div>
+    <div class="panel">
+      <h2 style="margin-top:0">Your data</h2>
+      <p id="dataInfo" class="small"></p>
+      <div class="row">
+        <button class="btn" type="button" id="backup">Download backup</button>
+        <span class="btn file-btn">Restore backup<input type="file" id="restore" accept=".json,application/json"></span>
+        <button class="btn" type="button" id="wipe">Delete all imported data</button>
+      </div>
+    </div>
+  </section>
+</main>
+<script src="../../assets/core.js"></script>
+<script src="../home-inventory/vault-kit.js"></script>
+<script src="../finance/lib.js"></script>
+<script src="./lib.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

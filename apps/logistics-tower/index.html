@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Logistics Control Tower — Brahaspati</title>
+  <meta name="description" content="Free tool for small transport and freight operators: consignments with delivery windows, driver and vehicle allocation with licence and capacity checks, auto-allocate, run sheets, consignment notes and proof of delivery, exceptions log and OTIF reporting. Data stays in your browser.">
+  <link rel="stylesheet" href="../../assets/style.css">
+  <link rel="stylesheet" href="../../forge/forge.css">
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <p class="eyebrow">Industry · transport</p>
+    <h1>Logistics Control Tower</h1>
+    <p class="lead">For small transport and freight operators. Book consignments with delivery windows, allocate drivers and trucks with licence, rego and capacity checks (or auto-allocate), print run sheets, consignment notes and proof of delivery, log exceptions, and track on-time-in-full.</p>
+  </section>
+  <div id="app"></div>
+  <details class="panel">
+    <summary><b>How it works and its limits</b></summary>
+    <ul class="small">
+      <li><b>No live tracking.</b> There is no GPS or driver app — a status changes only when someone updates it here (for example from the driver's phone call or a photo of the signed run sheet).</li>
+      <li>Licence classes follow the Australian order C → LR → MR → HR → HC → MC; a higher class covers lower ones. A driver with an expired licence, a vehicle with expired rego, or a vehicle over its weight or pallet limit cannot be allocated from the form.</li>
+      <li>Capacity is checked as if everything on a vehicle that day is on board at once — a safe, simple rule. Reloads at the depot during the day are not modelled; override in the Allocation tab if you know the run is split.</li>
+      <li>Auto-allocate only fills consignments with no driver or vehicle, keeps one driver per vehicle at overlapping times, prefers trucks already going out, then the smallest one that fits. Anything it cannot place is listed with the reason.</li>
+      <li>On time = delivered by the end of the window on the day. In full = ticked "delivered in full" with no damaged or short exception. Check chain of responsibility, fatigue and mass rules yourself — this tool does not do compliance.</li>
+      <li>Data lives in this browser: no login, no sync between devices, no customer portal. Reminders for licence, rego and service dates need this page open, or download the .ics file into your calendar.</li>
+    </ul>
+  </details>
+</main>
+<script src="../../assets/core.js"></script>
+<script src="../../forge/forge-core.js"></script>
+<script src="../../forge/forge-ui.js"></script>
+<script src="./lib.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

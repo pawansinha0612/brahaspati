@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Appointment No-show Predictor — Brahaspati</title>
+  <meta name="description" content="Find which appointments are likely to be missed and when to send extra reminders. Learns from your own booking history in the browser, scores upcoming bookings with reasons and suggests safe overbooking. Free and private.">
+  <link rel="stylesheet" href="../../assets/style.css">
+  <style>
+    .map-grid { display: grid; gap: 8px 14px; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+    .map-grid label { margin: 4px 0 2px; }
+    .opts { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); align-items: end; }
+    label.check { display: flex; gap: 6px; align-items: center; font-weight: 400; }
+    .dims { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+    .dims .panel { margin: 0; }
+    .dims h3 { margin-top: 0; }
+    .rec h3 { margin: 0 0 6px; }
+    .reasons { font-size: 13px; color: var(--muted); }
+    @media (max-width: 400px) { .dims { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <p class="eyebrow">Business · bookings</p>
+    <h1>Appointment No-show Predictor</h1>
+    <p class="lead">Learn from your past bookings which appointments are likely to be missed, then send extra reminders, ask for deposits or overbook where it is safe.</p>
+    <div class="row no-print">
+      <button class="btn primary" id="sample" type="button">Load sample data</button>
+      <button class="btn" id="backup" type="button">Download backup</button>
+      <button class="btn" id="restore" type="button">Restore backup</button>
+      <button class="btn" id="clearAll" type="button">Clear everything</button>
+    </div>
+    <p class="privacy">Your booking history is analysed inside this browser and saved only on this device. Nothing is uploaded — no customer details leave your computer.</p>
+  </section>
+
+  <div class="tabs" data-tabs="ns">
+    <button data-tab="import">1. Import</button>
+    <button data-tab="patterns">2. Patterns</button>
+    <button data-tab="upcoming">3. Upcoming risk</button>
+    <button data-tab="recs">4. What to do</button>
+    <button data-tab="model">Model check</button>
+    <button data-tab="how">How it works</button>
+  </div>
+
+  <section class="tab-panel" data-panel="import">
+    <div class="panel">
+      <p>Export your appointment history from your booking system (Cliniko, Fresha, Timely, Mindbody, Square Appointments, Halaxy, a spreadsheet…). Include at least the <b>appointment date</b> and the <b>status</b> (attended, no-show, cancelled). Booking date, time, customer, service, channel and reminder columns make it much smarter. Include future bookings (status "Booked") to score them.</p>
+      <div class="drop" id="drop">Drop a CSV or Excel file here, or click to choose</div>
+      <p class="small muted" id="fileInfo"></p>
+    </div>
+    <div class="panel" id="mapPanel" hidden>
+      <h3 style="margin-top:0">Check the columns</h3>
+      <p class="small muted">We guessed which column is which. Fix any that are wrong, then press Analyse.</p>
+      <div class="map-grid" id="mapGrid"></div>
+      <div class="opts" style="margin-top:12px">
+        <label class="check"><input type="checkbox" id="lateNs" checked> Count late cancellations as no-shows</label>
+        <div><label for="value">Average appointment value ($)</label><input type="number" id="value" min="0" value="90"></div>
+        <div><label for="conf">Overbooking caution</label><select id="conf"><option value="0.9">Very careful (10% clash risk)</option><option value="0.8" selected>Careful (20% clash risk)</option><option value="0.7">Relaxed (30% clash risk)</option></select></div>
+      </div>
+      <div class="row" style="margin-top:12px"><button class="btn primary" id="analyse" type="button">Analyse</button><span class="small muted" id="msg"></span></div>
+    </div>
+  </section>
+
+  <section class="tab-panel" data-panel="patterns">
+    <div id="patOut"><p class="muted">Import your bookings (or load the sample) first.</p></div>
+  </section>
+
+  <section class="tab-panel" data-panel="upcoming">
+    <div id="upOut"><p class="muted">Import your bookings first.</p></div>
+    <details class="panel no-print">
+      <summary><b>Add an upcoming appointment by hand</b></summary>
+      <div class="opts" style="margin-top:8px">
+        <div><label for="mDate">Date</label><input type="date" id="mDate"></div>
+        <div><label for="mTime">Time</label><input type="text" id="mTime" placeholder="9:30am"></div>
+        <div><label for="mCust">Customer ID / name</label><input type="text" id="mCust"></div>
+        <div><label for="mSvc">Service</label><input type="text" id="mSvc" list="svcList"><datalist id="svcList"></datalist></div>
+        <div><label for="mChan">Channel</label><input type="text" id="mChan" list="chanList"><datalist id="chanList"></datalist></div>
+        <div><label for="mBooked">Booked on</label><input type="date" id="mBooked"></div>
+        <div><label for="mRem">Reminder sent?</label><select id="mRem"><option value="">Not sure</option><option>Yes</option><option>No</option></select></div>
+        <div><label for="mNew">Customer</label><select id="mNew"><option value="">Work it out</option><option value="New">New</option><option value="Returning">Returning</option></select></div>
+      </div>
+      <div class="row" style="margin-top:10px"><button class="btn primary" id="mAdd" type="button">Add and score</button></div>
+    </details>
+  </section>
+
+  <section class="tab-panel" data-panel="recs">
+    <div id="recOut"><p class="muted">Import your bookings first.</p></div>
+  </section>
+
+  <section class="tab-panel" data-panel="model">
+    <div id="modelOut"><p class="muted">Import your bookings first.</p></div>
+  </section>
+
+  <section class="tab-panel" data-panel="how">
+    <div class="panel">
+      <h3 style="margin-top:0">How it works</h3>
+      <ol>
+        <li>Each past appointment is marked attended or missed. Ordinary cancellations are left out; late cancellations count as missed unless you untick that box.</li>
+        <li>No-show rates are worked out by day, time, how far ahead it was booked, service, channel, reminder, new versus returning, and the customer's own track record (using only visits <i>before</i> each appointment). Groups with fewer than 30 appointments are flagged as "few" — don't act on them alone.</li>
+        <li>With enough history (150+ appointments and 15+ no-shows) a logistic regression is trained right here in your browser on the oldest 75% of appointments and tested on the newest 25%. The AUC score says how well it ranks risk (0.5 = coin toss, 1.0 = perfect). It is then retrained on everything to score upcoming bookings.</li>
+        <li>With less history, a simple, transparent score is used instead: your overall no-show rate multiplied up or down by how each factor's rate compares, with small groups pulled towards average.</li>
+        <li>Reasons shown next to each booking are the factors pushing its risk up the most.</li>
+        <li>Overbooking: for each day, the chance of 0, 1, 2… no-shows is worked out from the individual risks. The suggestion is the most extra bookings where the chance that everyone turns up anyway (a clash) stays under your caution level.</li>
+      </ol>
+      <p class="small muted">Limits: this predicts likelihood, not certainty — a "high risk" customer usually still turns up. Never refuse service based on a score; use it to decide who gets an extra reminder or a deposit request. The tool can't send SMS for you or run on a schedule; download the list (or calendar tasks) and use your booking system's reminders.</p>
+    </div>
+  </section>
+</main>
+<script src="../../assets/core.js"></script>
+<script src="./lib.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Knowledge Graph Builder — Brahaspati</title>
+  <meta name="description" content="Drop in documents (PDF, Word, text, spreadsheets) and see the people, organisations, projects and topics they mention and how they connect. Runs in your browser; export JSON, CSV or GraphML.">
+  <link rel="stylesheet" href="../../assets/style.css">
+  <style>
+    .kg-canvas-box { position: relative; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); overflow: hidden; touch-action: none; }
+    .kg-canvas-box canvas { display: block; width: 100%; height: 520px; cursor: grab; }
+    @media (max-width: 600px) { .kg-canvas-box canvas { height: 380px; } }
+    .kg-tools { position: absolute; top: 8px; right: 8px; display: flex; gap: 4px; }
+    .kg-tools .btn { padding: 2px 9px; background: var(--panel); }
+    .kg-filters { display: grid; gap: 0 14px; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); align-items: end; }
+    .kg-types { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 14px; }
+    .kg-types label { display: inline-flex; gap: 5px; align-items: center; font-weight: 400; margin: 0; }
+    .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; flex: none; }
+    .kg-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; color: var(--muted); margin-top: 6px; }
+    .kg-legend span { display: inline-flex; gap: 5px; align-items: center; }
+    .snip { border-left: 3px solid var(--line); padding: 4px 10px; margin: 8px 0; font-size: 14px; overflow-wrap: anywhere; }
+    .snip .src { font-size: 12px; color: var(--muted); }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chips button { font-size: 13px; }
+    .kg-doc { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
+    .kg-doc .name { font-weight: 600; overflow-wrap: anywhere; }
+    .timeline { list-style: none; padding: 0; margin: 0; }
+    .timeline li { border-left: 2px solid var(--brand); padding: 2px 0 10px 14px; position: relative; overflow-wrap: anywhere; max-width: none; }
+    .timeline li::before { content: ""; position: absolute; left: -6px; top: 7px; width: 10px; height: 10px; border-radius: 50%; background: var(--brand); }
+    .progress { height: 6px; background: var(--soft); border-radius: 4px; overflow: hidden; margin-top: 8px; }
+    .progress div { height: 100%; width: 0; background: var(--brand); transition: width .2s; }
+  </style>
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <p class="eyebrow">Utilities</p>
+    <h1>Knowledge Graph Builder</h1>
+    <p class="lead">Drop in documents — board papers, emails, reports, meeting notes — and see the people, organisations, projects and topics they mention, and who and what keeps turning up together.</p>
+  </section>
+
+  <div class="panel">
+    <div class="drop" id="drop"><strong>Drop documents here</strong> or click to pick — PDF, Word (.docx), text, Markdown, CSV or Excel. Add as many as you like.</div>
+    <details style="margin-top:12px">
+      <summary class="small">Or paste text</summary>
+      <label for="pasteName">Name</label><input id="pasteName" type="text" placeholder="e.g. Notes from Tuesday">
+      <label for="pasteText">Text</label><textarea id="pasteText" class="prose" style="min-height:140px"></textarea>
+      <div class="row" style="margin-top:8px"><button class="btn" id="addPaste" type="button">Add this text</button></div>
+    </details>
+    <div class="row" style="margin-top:12px">
+      <button class="btn" id="sample" type="button">Load sample data</button>
+      <button class="btn" id="clearAll" type="button">Clear everything</button>
+      <span class="small muted" id="count"></span>
+    </div>
+    <div class="progress" id="progBar" hidden><div></div></div>
+    <p class="small muted" id="progress" aria-live="polite" style="margin:6px 0 0"></p>
+  </div>
+
+  <div class="stat-row" id="stats"></div>
+
+  <div class="tabs" data-tabs="kg">
+    <button data-tab="graph">Graph</button>
+    <button data-tab="lists">Lists</button>
+    <button data-tab="docs">Documents</button>
+    <button data-tab="export">Export</button>
+  </div>
+
+  <section class="tab-panel" data-panel="graph">
+    <div class="panel">
+      <div class="kg-types" id="types"></div>
+      <div class="kg-filters">
+        <div><label for="minW">Hide weak links (min weight <span id="minWv">0</span>)</label><input id="minW" type="range" min="0" max="20" step="0.5" value="0" style="width:100%;accent-color:var(--brand)"></div>
+        <div><label for="docFilter">Document</label><select id="docFilter"><option value="">All documents</option></select></div>
+        <div><label for="search">Search</label><input id="search" type="search" placeholder="Name, email or topic"></div>
+        <div><label for="maxN">Show up to</label><select id="maxN"><option>50</option><option selected>100</option><option>150</option><option>250</option></select></div>
+      </div>
+    </div>
+    <div class="kg-canvas-box" id="box">
+      <canvas id="cv" aria-label="Knowledge graph. Use the entity picker below the graph to explore with a keyboard."></canvas>
+      <div class="kg-tools"><button class="btn small" id="zin" type="button" aria-label="Zoom in">+</button><button class="btn small" id="zout" type="button" aria-label="Zoom out">−</button><button class="btn small" id="fit" type="button">Fit</button><button class="btn small" id="relayout" type="button">Shake</button></div>
+    </div>
+    <div class="kg-legend" id="legend"></div>
+    <p class="small muted" style="margin:6px 0">Drag to move around, scroll or pinch to zoom, drag a dot to pin it, click a dot to see where it’s mentioned. Thicker lines = mentioned together more often.</p>
+    <div class="row"><label for="pick" style="margin:0">Jump to</label><select id="pick" style="max-width:320px"></select></div>
+    <div id="detail"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="lists">
+    <div class="cols-2">
+      <div class="panel"><h2 style="margin-top:0">Most-mentioned people</h2><div id="topPeople"></div></div>
+      <div class="panel"><h2 style="margin-top:0">Projects</h2><div id="topProjects"></div></div>
+      <div class="panel"><h2 style="margin-top:0">Organisations</h2><div id="topOrgs"></div></div>
+      <div class="panel"><h2 style="margin-top:0">Topics</h2><div id="topTopics"></div></div>
+    </div>
+    <div class="panel"><h2 style="margin-top:0">Who works with whom</h2><p class="small muted" style="margin-top:-4px">People named in the same sentence, paragraph or document. Weight: same sentence 3, same paragraph 1, same document 0.5.</p><div id="pairs"></div></div>
+    <div class="panel"><h2 style="margin-top:0">Decisions timeline</h2><p class="small muted" style="margin-top:-4px">Sentences with “decided”, “agreed”, “approved” and similar, ordered by the date mentioned in them.</p><div id="decisions"></div></div>
+  </section>
+
+  <section class="tab-panel" data-panel="docs">
+    <div class="panel">
+      <div id="docList"></div>
+      <div id="aiBox" style="margin-top:12px"></div>
+    </div>
+  </section>
+
+  <section class="tab-panel" data-panel="export">
+    <div class="panel">
+      <h2 style="margin-top:0">Download the graph</h2>
+      <div class="row">
+        <button class="btn" id="exJson" type="button">JSON</button>
+        <button class="btn" id="exNodes" type="button">Nodes CSV</button>
+        <button class="btn" id="exEdges" type="button">Links CSV</button>
+        <button class="btn" id="exGraphml" type="button">GraphML (Gephi, yEd, Cytoscape)</button>
+        <button class="btn" id="exPng" type="button">Picture (PNG)</button>
+      </div>
+      <h2>Backup</h2>
+      <p class="small muted">A backup holds your documents’ text and what was found in them, so you can move to another browser.</p>
+      <div class="row"><button class="btn" id="backup" type="button">Download backup</button><button class="btn" id="restoreBtn" type="button">Restore from backup</button><input type="file" id="restore" accept=".json,application/json" hidden></div>
+    </div>
+  </section>
+
+  <p class="privacy">Your documents are read and stored in this browser only (IndexedDB) — nothing is uploaded. Names, organisations and projects are found with fixed patterns (capitalised names, “Pty Ltd”, “Project …”), so it will miss some and occasionally pick up a heading as a name. Scanned PDFs without a text layer can’t be read. If you turn on the optional AI helper, the ✨ button sends only the document you pick to the AI you chose.</p>
+  <div id="aiNote"></div>
+</main>
+<script src="../../assets/core.js"></script>
+<script src="../../assets/ai.js"></script>
+<script src="./lib.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Decision Simulator — Brahaspati</title>
+  <meta name="description" content="Compare 2–5 options for a business decision: costs, benefits, risks and uncertainty. 3-year cash view, NPV, payback, Monte Carlo simulation, sensitivity tornado, weighted criteria and a printable decision paper. Free, runs in your browser.">
+  <link rel="stylesheet" href="../../assets/style.css">
+  <style>
+    .opt { border-left: 4px solid var(--c, var(--brand)); }
+    .opt h3 { margin-top: 0; }
+    .rng { display: grid; grid-template-columns: minmax(0, 1.6fr) repeat(3, minmax(0, 1fr)); gap: 6px; align-items: end; }
+    .rng label { margin: 6px 0 2px; font-size: 12px; font-weight: 600; color: var(--muted); }
+    .ln { display: grid; grid-template-columns: minmax(0, 2fr) 110px repeat(3, minmax(0, 1fr)) auto; gap: 6px; align-items: center; margin: 4px 0; }
+    .rk { display: grid; grid-template-columns: minmax(0, 2fr) 80px repeat(3, minmax(0, 1fr)) auto; gap: 6px; align-items: center; margin: 4px 0; }
+    .ln-head { font-size: 12px; color: var(--muted); }
+    .ln input, .ln select, .rk input { padding: 6px 8px; font-size: 14px; }
+    @media (max-width: 700px) {
+      .ln, .rk { grid-template-columns: repeat(3, minmax(0, 1fr)); padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+      .ln > :first-child, .rk > :first-child { grid-column: 1 / -1; }
+      .ln-head { display: none; }
+      .rng { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .rng > :first-child { grid-column: 1 / -1; }
+    }
+    .form-grid { display: grid; gap: 0 14px; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+    .form-grid .full { grid-column: 1 / -1; }
+    .sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; background: var(--c); vertical-align: -1px; margin-right: 6px; }
+    .chart svg { width: 100%; height: auto; display: block; }
+    .chart text { fill: var(--muted); font-size: 11px; font-family: var(--font); }
+    .chart .axis { stroke: var(--line); }
+    .rec { border-left: 4px solid var(--brand); }
+    .rec .headline { font-size: 17px; font-weight: 600; }
+    td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .torn { display: grid; grid-template-columns: minmax(0, 38%) 1fr; gap: 4px 10px; align-items: center; font-size: 13px; }
+    .torn .bar { position: relative; height: 18px; }
+    .torn .bar span { position: absolute; top: 0; height: 18px; border-radius: 3px; }
+    .torn .bar .lo { background: var(--bad); opacity: .75; }
+    .torn .bar .hi { background: var(--ok); opacity: .75; }
+    .torn .mid { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--ink); }
+    .crit { display: grid; gap: 6px; }
+    .crit-row { display: grid; grid-template-columns: minmax(0, 1fr) 80px auto; gap: 6px; align-items: center; }
+    .scores input { width: 70px; padding: 4px 6px; }
+    .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; }
+  </style>
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <p class="eyebrow">Business · decisions</p>
+    <h1>Decision Simulator</h1>
+    <p class="lead">Compare two to five options for a business decision. Enter what each option costs and returns as a low, likely and high guess, add the risks, and see the likely cash outcome, the chance each option comes out best, and which number matters most.</p>
+    <div class="row no-print">
+      <button class="btn primary" id="sample" type="button">Load sample data</button>
+      <select id="template" aria-label="Start from a template" style="width:auto;max-width:100%"></select>
+      <button class="btn" id="useTemplate" type="button">Start from template</button>
+      <button class="btn" id="blank" type="button">Blank decision</button>
+    </div>
+    <p class="privacy">Your decisions are saved in this browser only. Use Export to keep a copy or move it to another device.</p>
+  </section>
+
+  <div class="panel row no-print" style="justify-content:space-between">
+    <div class="row" style="flex:1 1 260px;min-width:0">
+      <label for="pick" style="margin:0">Decision</label>
+      <select id="pick" style="flex:1 1 200px;width:auto;min-width:0;max-width:100%"></select>
+    </div>
+    <div class="row">
+      <button class="btn small" id="dup" type="button">Duplicate</button>
+      <button class="btn small" id="del" type="button">Delete</button>
+      <button class="btn small" id="exportOne" type="button">Export this</button>
+      <button class="btn small" id="exportAll" type="button">Export all</button>
+      <button class="btn small" id="import" type="button">Import</button>
+    </div>
+  </div>
+
+  <div class="tabs" data-tabs="dec">
+    <button data-tab="setup">1. Options</button>
+    <button data-tab="criteria">2. Other factors</button>
+    <button data-tab="results">3. Results</button>
+    <button data-tab="paper">4. Decision paper</button>
+  </div>
+
+  <section class="tab-panel" data-panel="setup">
+    <div class="panel">
+      <div class="form-grid">
+        <div class="full"><label for="d-title">What are you deciding?</label><input type="text" id="d-title" data-k="title"></div>
+        <div><label for="d-horizon">Period (months)</label><input type="number" id="d-horizon" data-k="horizon" min="6" max="120" step="1"></div>
+        <div><label for="d-rate">Discount rate (% a year)</label><input type="number" id="d-rate" data-k="discountRate" min="0" max="50" step="0.5"></div>
+        <div><label for="d-runs">Simulation runs</label><input type="number" id="d-runs" data-k="runs" min="500" max="50000" step="500"></div>
+        <div><label for="d-seed">Random seed</label><input type="number" id="d-seed" data-k="seed" min="1" step="1"></div>
+        <div class="full"><label for="d-notes">Background (optional, printed on the paper)</label><textarea id="d-notes" class="prose" data-k="notes" style="min-height:60px"></textarea></div>
+      </div>
+      <p class="small muted">Discount rate: what your money could earn elsewhere or costs you to borrow (6–12% is common for small businesses). It makes later dollars count a little less than dollars today. The seed makes the simulation repeatable — change it to check the answer is stable.</p>
+    </div>
+    <div id="options"></div>
+    <div class="row"><button class="btn" id="addOption" type="button">+ Add an option</button><span class="small muted">Up to 5 options.</span></div>
+  </section>
+
+  <section class="tab-panel" data-panel="criteria">
+    <div class="panel">
+      <h3 style="margin-top:0">Things money doesn't capture</h3>
+      <p class="small muted">List the factors that matter (customer experience, stress, flexibility…) and how much each matters (weight 0–5). Then score each option 0–10 on each. The result is a weighted score out of 100, shown next to the money result — it does not change the money numbers.</p>
+      <div id="critList" class="crit"></div>
+      <button class="btn small" id="addCrit" type="button" style="margin-top:8px">+ Add a factor</button>
+    </div>
+    <div id="scoreGrid"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="results">
+    <div class="row no-print" style="margin-top:14px"><button class="btn primary" id="run" type="button">Run the simulation again</button><span class="small muted" id="runInfo"></span></div>
+    <div id="results"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="paper">
+    <div class="row no-print" style="margin-top:14px">
+      <button class="btn primary" id="print" type="button">Print / save as PDF</button>
+      <button class="btn" id="dlPaper" type="button">Download HTML</button>
+      <button class="btn" id="dlCsv" type="button">Download cash flows (CSV)</button>
+      <button class="btn" id="copySummary" type="button">Copy summary</button>
+    </div>
+    <div id="aiBox" class="row" style="margin-top:10px"></div>
+    <div id="aiOut"></div>
+    <div class="panel" style="padding:0;overflow:hidden"><iframe id="paperFrame" title="Decision paper preview" style="width:100%;height:900px;border:0;background:#fff"></iframe></div>
+  </section>
+</main>
+<script src="../../assets/core.js"></script>
+<script src="../../assets/ai.js"></script>
+<script src="./lib.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

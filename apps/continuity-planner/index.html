@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Business Continuity Planner — Brahaspati</title>
+  <meta name="description" content="Free business continuity and disaster recovery planner for small businesses: answer guided questions and get a risk register, business impact analysis, contact tree, incident checklists, testing schedule and a printable BCP. Data stays in your browser.">
+  <link rel="stylesheet" href="../../assets/style.css">
+  <style>
+    .form-grid { display: grid; gap: 0 14px; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); }
+    .form-grid .full { grid-column: 1 / -1; }
+    .check { display: flex; gap: 8px; align-items: center; font-weight: 400; margin-top: 34px; }
+    .entry { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; margin: 10px 0; }
+    .entry-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .entry-head b { overflow-wrap: anywhere; }
+    .help { color: var(--muted); font-size: 14px; max-width: 72ch; }
+    .score { font-size: 44px; font-weight: 800; line-height: 1; }
+    .meter { height: 10px; background: var(--soft); border-radius: 6px; overflow: hidden; margin: 8px 0; max-width: 420px; }
+    .meter div { height: 100%; background: var(--brand); }
+    .gap { padding: 8px 12px; border-left: 4px solid var(--warn); background: var(--panel); border-radius: 6px; margin: 6px 0; }
+    .gap.big { border-left-color: var(--bad); }
+    .heat { display: grid; grid-template-columns: 28px repeat(5, minmax(0, 1fr)); gap: 3px; max-width: 520px; font-size: 11px; }
+    .heat div { border-radius: 4px; padding: 4px; min-height: 40px; }
+    .heat .ax { background: none; color: var(--muted); display: flex; align-items: center; justify-content: center; min-height: 0; }
+    .heat .c-low { background: color-mix(in srgb, var(--ok) 22%, transparent); }
+    .heat .c-medium { background: color-mix(in srgb, var(--warn) 18%, transparent); }
+    .heat .c-high { background: color-mix(in srgb, var(--warn) 38%, transparent); }
+    .heat .c-extreme { background: color-mix(in srgb, var(--bad) 35%, transparent); }
+    .tree div { padding: 3px 0; overflow-wrap: anywhere; }
+    .phase { margin: 6px 0 10px; }
+    .phase li { margin: 3px 0; }
+    td select { width: auto; padding: 3px 6px; font-size: 13px; }
+    .stepnav { display: flex; justify-content: space-between; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+  </style>
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <p class="eyebrow">Business · risk</p>
+    <h1>Business Continuity Planner</h1>
+    <p class="lead">Answer guided questions about what keeps your business running. Get a risk register, business impact analysis, contact tree, step-by-step incident checklists, a testing schedule and a printable continuity and disaster recovery plan.</p>
+    <div class="row no-print">
+      <button class="btn primary" id="sample" type="button">Load sample data</button>
+      <button class="btn" id="exportJson" type="button">Download backup</button>
+      <label class="btn" style="margin:0;font-weight:400">Import backup<input type="file" id="importJson" accept=".json,application/json" hidden></label>
+      <button class="btn" id="clearAll" type="button">Start again</button>
+    </div>
+    <p class="privacy">Everything stays in this browser. Download a backup and keep a printed copy of the finished plan somewhere other than your premises.</p>
+  </section>
+
+  <div class="tabs" data-tabs="bcp">
+    <button data-tab="business">1. Business</button>
+    <button data-tab="activities">2. Critical activities</button>
+    <button data-tab="people">3. People</button>
+    <button data-tab="suppliers">4. Suppliers</button>
+    <button data-tab="systems">5. Systems &amp; data</button>
+    <button data-tab="premises">6. Premises &amp; comms</button>
+    <button data-tab="results">Results</button>
+    <button data-tab="plan">Plan document</button>
+  </div>
+
+  <section class="tab-panel" data-panel="business">
+    <p class="help">Start with the basics. The incident coordinator is the person who takes charge when something goes wrong (often the owner).</p>
+    <div class="form-grid" id="f-business"></div>
+  </section>
+  <section class="tab-panel" data-panel="activities">
+    <p class="help">What must keep running for the business to survive? Think about what earns money, what customers would notice first, and legal deadlines (payroll, tax). For each one: the <b>maximum tolerable downtime</b> (the longest you could survive without it), the <b>RTO</b> (how quickly you aim to have it back — shorter than the maximum), and the <b>RPO</b> (how much recent data you could afford to lose and re-enter).</p>
+    <div id="l-activities"></div>
+  </section>
+  <section class="tab-panel" data-panel="people">
+    <p class="help">Who does work that others can't easily cover? Tick "key person" and name a deputy who could step in. These names build the contact tree.</p>
+    <div id="l-people"></div>
+  </section>
+  <section class="tab-panel" data-panel="suppliers">
+    <p class="help">Which suppliers, software providers or contractors could stop you working if they failed? Note an alternative for each critical one.</p>
+    <div id="l-suppliers"></div>
+  </section>
+  <section class="tab-panel" data-panel="systems">
+    <p class="help">List every system that holds business data — accounting, email, files, booking or job software, the website. How is each backed up, how often, is a copy kept offsite or in the cloud, and when did you last check you could restore it?</p>
+    <div id="l-systems"></div>
+  </section>
+  <section class="tab-panel" data-panel="premises">
+    <h2>Premises</h2>
+    <div class="form-grid" id="f-premises"></div>
+    <h2>Communications</h2>
+    <p class="help">How will you reach staff, customers and suppliers if the phones, office or email are down?</p>
+    <div class="form-grid" id="f-comms"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="results">
+    <div id="results"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="plan">
+    <div class="row" style="margin-top:14px">
+      <button class="btn primary" id="planPrint" type="button">Print / save as PDF</button>
+      <button class="btn" id="planHtml" type="button">Download HTML</button>
+      <button class="btn" id="planMd" type="button">Download Markdown</button>
+      <button class="btn" id="planCopy" type="button">Copy Markdown</button>
+      <button class="btn" id="markReviewed" type="button">Mark plan reviewed today</button>
+    </div>
+    <p class="small muted">This plan is a practical template, not legal or insurance advice. Check specific obligations (WHS, privacy, industry rules) for your business.</p>
+    <div id="planPreview" style="margin-top:12px"></div>
+  </section>
+</main>
+<script src="../../assets/core.js"></script>
+<script src="./lib.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

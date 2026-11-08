@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Architecture Diagram Generator — Brahaspati</title>
+  <meta name="description" content="Describe a system in plain English, or paste a docker-compose file, Kubernetes manifests or a folder tree, and get an editable architecture diagram. Export Mermaid, SVG, PNG or draw.io.">
+  <link rel="stylesheet" href="../../assets/style.css">
+  <style>
+    .ad-out { border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); overflow: auto; min-height: 220px; padding: 12px; }
+    .ad-out svg { max-width: none; height: auto; display: block; margin: 0 auto; }
+    .ad-out.fit svg { max-width: 100%; }
+    .ad-opts { display: grid; gap: 0 14px; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); align-items: end; }
+    .ad-opts .check { display: inline-flex; gap: 6px; align-items: center; font-weight: 400; }
+    .warn-list { margin: 8px 0 0; padding-left: 18px; }
+    .warn-list li { overflow-wrap: anywhere; }
+    #src { min-height: 220px; }
+    .comp { columns: 2 240px; gap: 18px; padding-left: 18px; margin: 6px 0; font-size: 14px; }
+    .comp li { break-inside: avoid; overflow-wrap: anywhere; }
+  </style>
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <p class="eyebrow">Developers</p>
+    <h1>Architecture Diagram Generator</h1>
+    <p class="lead">Describe your system in a sentence or two — or paste a docker-compose file, Kubernetes YAML or a folder tree — and get a layered architecture diagram you can edit, then export to SVG, PNG, Mermaid or draw.io.</p>
+  </section>
+
+  <div class="tabs" data-tabs="ad">
+    <button data-tab="text">Describe it</button>
+    <button data-tab="compose">docker-compose</button>
+    <button data-tab="k8s">Kubernetes</button>
+    <button data-tab="tree">Folder tree</button>
+  </div>
+  <section class="tab-panel" data-panel="text">
+    <div class="panel">
+      <label for="in-text" style="margin-top:0">Describe the system</label>
+      <p class="small muted" style="margin-top:0">Name the parts (“orders service”, “Postgres”, “Kafka”, “React web app”, “Stripe”) and say how they talk: calls, routes to, reads from, writes to, publishes, consumes, through.</p>
+      <textarea id="in-text" class="prose" placeholder="React web app calls an API gateway which routes to orders and payments services; orders uses Postgres; payments calls Stripe; events go through Kafka to a notifications worker."></textarea>
+    </div>
+  </section>
+  <section class="tab-panel" data-panel="compose">
+    <div class="panel">
+      <label for="in-compose" style="margin-top:0">docker-compose.yml</label>
+      <p class="small muted" style="margin-top:0">Reads services, images, ports, depends_on, links, networks, named volumes and hostnames inside environment values (e.g. <code>postgres://db:5432</code>).</p>
+      <textarea id="in-compose" spellcheck="false"></textarea>
+    </div>
+  </section>
+  <section class="tab-panel" data-panel="k8s">
+    <div class="panel">
+      <label for="in-k8s" style="margin-top:0">Kubernetes manifests</label>
+      <p class="small muted" style="margin-top:0">Paste one or more YAML documents separated by <code>---</code>. Links Ingress → Service → Deployment/StatefulSet by selectors, plus ConfigMaps, Secrets and volume claims.</p>
+      <textarea id="in-k8s" spellcheck="false"></textarea>
+    </div>
+  </section>
+  <section class="tab-panel" data-panel="tree">
+    <div class="panel">
+      <label for="in-tree" style="margin-top:0">Folder tree</label>
+      <p class="small muted" style="margin-top:0">Paste the output of <code>tree -L 3</code> (or an indented list). Spots frontend, backend, worker, mobile, database-migration and infrastructure folders. It guesses from folder names only.</p>
+      <textarea id="in-tree" spellcheck="false"></textarea>
+    </div>
+  </section>
+
+  <div class="panel">
+    <div class="ad-opts">
+      <div><label for="view" style="margin-top:0">View</label><select id="view"><option value="layers">Layered flowchart</option><option value="c4">C4 container view</option></select></div>
+      <div><label for="dir" style="margin-top:0">Direction</label><select id="dir"><option value="LR">Left to right</option><option value="TB">Top to bottom</option></select></div>
+      <div><label class="check"><input type="checkbox" id="icons" checked> Icons</label><label class="check"><input type="checkbox" id="details" checked> Details (image, ports)</label></div>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <button class="btn primary" id="go" type="button">Make diagram</button>
+      <button class="btn" id="sample" type="button">Load sample data</button>
+      <span class="small muted" id="status" aria-live="polite"></span>
+    </div>
+    <ul class="warn-list small warn" id="warnings"></ul>
+  </div>
+
+  <div id="out" hidden>
+    <div class="row" style="justify-content:space-between">
+      <h2 style="margin:12px 0 6px">Diagram</h2>
+      <label class="check small" style="font-weight:400;display:inline-flex;gap:6px;align-items:center;margin:0"><input type="checkbox" id="fit" checked> Fit to width</label>
+    </div>
+    <div class="ad-out fit" id="diagram" aria-live="polite"></div>
+    <div class="row" style="margin-top:10px">
+      <button class="btn" id="dlSvg" type="button">SVG</button>
+      <button class="btn" id="dlPng" type="button">PNG</button>
+      <button class="btn" id="dlMmd" type="button">Mermaid (.mmd)</button>
+      <button class="btn" id="dlDrawio" type="button">draw.io</button>
+      <button class="btn" id="copyMmd" type="button">Copy Mermaid</button>
+    </div>
+    <div class="cols-2" style="margin-top:6px">
+      <div class="panel">
+        <h3 style="margin-top:0">Mermaid source</h3>
+        <p class="small muted" style="margin-top:-4px">Edit it and the diagram redraws. Paste it into GitHub, GitLab, Notion or Confluence Markdown.</p>
+        <textarea id="src" spellcheck="false" aria-label="Mermaid source"></textarea>
+        <div class="row" style="margin-top:8px"><button class="btn small" id="resetSrc" type="button">Undo my edits</button><span class="small" id="srcErr"></span></div>
+      </div>
+      <div class="panel">
+        <h3 style="margin-top:0">What it found</h3>
+        <div id="found"></div>
+      </div>
+    </div>
+  </div>
+
+  <p class="privacy">Everything runs in your browser — your YAML and descriptions are not uploaded. The diagram library (Mermaid) is downloaded once from a public CDN. The rules match common names and verbs, so check the result and fix the Mermaid text if something’s off.</p>
+</main>
+<script src="../../assets/core.js"></script>
+<script src="./lib.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

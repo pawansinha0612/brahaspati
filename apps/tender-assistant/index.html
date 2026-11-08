@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tender Response Assistant — Brahaspati</title>
+  <meta name="description" content="Free tender response helper: pull every must and should out of an RFT or RFQ, find the evaluation criteria, closing date and page limits, build a compliance matrix (CSV or Excel), plan page budgets, reuse past answers, decide bid or no bid and tick off the final checklist. Your files stay in your browser.">
+  <link rel="stylesheet" href="../../assets/style.css">
+  <style>
+    .form-grid { display: grid; gap: 0 12px; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
+    .form-grid .full { grid-column: 1 / -1; }
+    .check { display: flex; gap: 6px; align-items: center; font-weight: 400; margin: 0; }
+    .matrix td { font-size: 13px; }
+    .matrix td.req { min-width: 260px; max-width: 460px; }
+    .matrix select, .matrix input[type=text] { padding: 4px 6px; font-size: 13px; min-width: 110px; }
+    .matrix input.pg { min-width: 54px; width: 64px; }
+    .sugg { font-size: 13px; background: var(--soft); border-radius: 6px; padding: 6px 8px; margin-top: 6px; }
+    .sugg li { margin: 3px 0; }
+    .pill-mute { font-size: 12px; padding: 1px 8px; border-radius: 99px; font-weight: 600; background: var(--soft); color: var(--muted); }
+    .crit-row { display: grid; gap: 8px; grid-template-columns: 1fr 90px auto auto; align-items: center; margin: 6px 0; }
+    @media (max-width: 560px) { .crit-row { grid-template-columns: 1fr 70px; } }
+    .sec h3 { margin-top: 0; }
+    .sec textarea { min-height: 220px; }
+    .meter { font-size: 13px; }
+    dl.sub { display: grid; grid-template-columns: minmax(110px, 200px) 1fr; gap: 6px 12px; margin: 0; }
+    dl.sub dt { font-weight: 600; color: var(--muted); font-size: 14px; }
+    dl.sub dd { margin: 0; overflow-wrap: anywhere; }
+    @media (max-width: 480px) { dl.sub { grid-template-columns: 1fr; } dl.sub dd { margin-bottom: 6px; } }
+    .gng-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--line); }
+    .gng-row select { width: auto; }
+    .verdict { font-size: 22px; font-weight: 700; }
+    .lib-item h3 { margin: 0 0 4px; }
+    .chk { display: flex; gap: 8px; align-items: flex-start; padding: 5px 0; border-bottom: 1px solid var(--line); }
+    .chk input { margin-top: 5px; }
+  </style>
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <p class="eyebrow">Business · winning work</p>
+    <h1>Tender Response Assistant</h1>
+    <p class="lead">Drop in the request for tender (or quote) and get every “must” and “should” listed, the evaluation criteria and weightings, the closing date and the submission rules. Then track compliance, plan your pages, reuse your best past answers and decide whether it’s worth bidding at all.</p>
+    <div class="row no-print">
+      <button class="btn primary" id="sample" type="button">Load sample data</button>
+      <button class="btn" id="backup" type="button">Download backup (JSON)</button>
+      <button class="btn" id="restore" type="button">Restore backup</button>
+      <button class="btn" id="wipe" type="button">Delete all data</button>
+    </div>
+    <p class="privacy">Tender documents are read on your device and never uploaded. Extraction is rule-based — it finds sentences with words like <i>must</i>, <i>shall</i> and <i>should</i> — so always read the full tender too.</p>
+  </section>
+
+  <div class="tabs" data-tabs="tender">
+    <button data-tab="doc">1. Tender</button>
+    <button data-tab="matrix">2. Compliance matrix</button>
+    <button data-tab="plan">3. Response plan</button>
+    <button data-tab="library">4. Content library</button>
+    <button data-tab="gonogo">5. Bid or no bid</button>
+    <button data-tab="final">6. Final checklist</button>
+  </div>
+
+  <section class="tab-panel" data-panel="doc">
+    <div class="panel no-print">
+      <div class="form-grid">
+        <div class="full"><label for="tTitle">Tender name / number</label><input type="text" id="tTitle" placeholder="e.g. RFT 2026-114 Grounds maintenance"></div>
+      </div>
+      <div class="drop" id="drop" style="margin-top:10px">Drop the tender PDF, Word (.docx) or text file here, or click to choose</div>
+      <label for="tText">…or paste the tender text</label>
+      <textarea id="tText" class="prose" placeholder="Paste the RFT / RFQ here…"></textarea>
+      <div class="row" style="margin-top:10px"><button class="btn primary" id="analyse" type="button">Find requirements, criteria and dates</button><span class="small muted" id="docStatus"></span></div>
+      <p class="small muted">Scanned PDFs (pictures of pages) contain no text; run them through the Screenshot Reader first. Long tenders with many attachments: add each document’s text here one after another.</p>
+    </div>
+    <div id="docSummary"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="matrix">
+    <div id="matrixStats" class="stat-row"></div>
+    <div class="row no-print" style="margin-top:12px">
+      <select id="mFilter" aria-label="Show" style="width:auto"><option value="all">All requirements</option><option value="mand">Mandatory only</option><option value="open">Not complete</option><option value="noowner">No owner</option></select>
+      <input type="search" id="mSearch" placeholder="Search requirements" aria-label="Search requirements" style="max-width:220px">
+      <button class="btn small" id="addReq" type="button">Add requirement</button>
+      <button class="btn small" id="csvMatrix" type="button">Download CSV</button>
+      <button class="btn small" id="xlsxMatrix" type="button">Download Excel</button>
+    </div>
+    <div id="matrixOut" style="margin-top:10px"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="plan">
+    <div class="panel">
+      <h3 style="margin-top:0">Evaluation criteria</h3>
+      <div id="critList"></div>
+      <div class="row"><button class="btn small" id="addCrit" type="button">Add criterion</button></div>
+      <div class="form-grid" style="margin-top:8px">
+        <div><label for="budgetTotal">Total allowed</label><input type="number" id="budgetTotal" min="0" step="any"></div>
+        <div><label for="budgetUnit">Measured in</label><select id="budgetUnit"><option value="pages">Pages</option><option value="words">Words</option></select></div>
+        <div><label for="org">Your business name (for drafts)</label><input type="text" id="org"></div>
+      </div>
+      <p class="small muted">Budgets are shared in proportion to each criterion’s weighting. Untick “written” for criteria answered in a separate form, such as the price schedule. One page ≈ 450 words.</p>
+      <div id="budgetOut"></div>
+    </div>
+    <div id="sections"></div>
+    <div id="aiNote"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="library">
+    <div class="panel no-print">
+      <h3 style="margin-top:0" id="libFormTitle">Add to your content library</h3>
+      <p class="small muted">Save the answers, case studies, CVs and policies you reuse. They are matched to each requirement by shared keywords, and used to build drafts.</p>
+      <form id="libForm" class="form-grid">
+        <div><label for="l-title">Title *</label><input type="text" id="l-title" required></div>
+        <div><label for="l-type">Type</label><select id="l-type"><option>Past answer</option><option>Case study</option><option>CV</option><option>Policy</option><option>Template</option><option>Certificate</option></select></div>
+        <div class="full"><label for="l-tags">Keywords (help matching)</label><input type="text" id="l-tags" placeholder="safety, whs, swms"></div>
+        <div class="full"><label for="l-text">Text *</label><textarea id="l-text" class="prose" required></textarea></div>
+        <div class="full drop" id="libDrop">Or drop a .docx, .pdf or .txt to fill the text</div>
+        <div class="full row" style="margin-top:10px"><button class="btn primary" type="submit">Save item</button><button class="btn" type="button" id="libCancel" hidden>Cancel</button></div>
+      </form>
+    </div>
+    <input type="search" id="libSearch" placeholder="Search the library" aria-label="Search the library" style="max-width:320px">
+    <div id="libList" style="margin-top:10px"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="gonogo">
+    <div class="panel">
+      <h3 style="margin-top:0">Should we bid?</h3>
+      <p class="small muted">Score each question 1 (no / poor) to 5 (yes / strong). A score of 1 on a starred question means no bid, whatever the total. Writing a tender often costs days of work — this helps you spend that time on the ones you can win.</p>
+      <div id="gngList"></div>
+      <div id="gngOut" style="margin-top:12px"></div>
+      <label for="gngNotes">Decision notes</label><textarea id="gngNotes" class="prose" style="min-height:70px"></textarea>
+    </div>
+  </section>
+
+  <section class="tab-panel" data-panel="final">
+    <div class="panel">
+      <h3 style="margin-top:0">Before you lodge</h3>
+      <p class="small muted">Standard checks plus items found in this tender (marked “from tender”).</p>
+      <div id="chkList"></div>
+      <form id="chkForm" class="row" style="margin-top:10px"><input type="text" id="chkNew" placeholder="Add a check" aria-label="Add a check" style="max-width:360px"><button class="btn small" type="submit">Add</button></form>
+      <div class="row no-print" style="margin-top:10px"><button class="btn" id="printChk" type="button">Print checklist</button></div>
+    </div>
+  </section>
+</main>
+<script src="../../assets/core.js"></script>
+<script src="../../assets/ai.js"></script>
+<script src="./lib.js"></script>
+<script src="./sample.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

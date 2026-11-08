@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Contract Risk Scanner — Brahaspati</title>
+  <meta name="description" content="Upload a contract (PDF, Word or text) to spot auto-renewals, notice periods, payment terms, price rises, liability, indemnities, restraints and missing clauses. Key dates to your calendar. Free, runs in your browser. Not legal advice.">
+  <link rel="stylesheet" href="../../assets/style.css">
+  <style>
+    .legal { border: 2px solid var(--warn); background: color-mix(in srgb, var(--warn) 10%, var(--panel)); border-radius: var(--radius); padding: 12px 16px; margin: 12px 0; }
+    .legal p { margin: 0; }
+    .form-grid { display: grid; gap: 0 14px; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+    .clause { border-left: 4px solid var(--line); }
+    .clause.sev-high { border-left-color: var(--bad); }
+    .clause.sev-medium { border-left-color: var(--warn); }
+    .clause.sev-low { border-left-color: var(--ok); }
+    .clause h3 { margin: 0 0 6px; font-size: 16px; }
+    .clause .body { white-space: pre-wrap; font-size: 14px; max-width: 80ch; overflow-wrap: anywhere; }
+    .pill-mute { font-size: 12px; padding: 1px 8px; border-radius: 99px; font-weight: 600; background: var(--soft); color: var(--muted); }
+    .flag { margin: 8px 0 0; font-size: 14px; }
+    .flag b { margin-right: 4px; }
+    .score { font-size: 40px; font-weight: 800; line-height: 1; }
+    .meter { height: 10px; background: var(--soft); border-radius: 6px; overflow: hidden; margin: 8px 0; max-width: 360px; }
+    .meter span { display: block; height: 100%; }
+    .find { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; align-items: start; padding: 10px 0; border-bottom: 1px solid var(--line); }
+    .find:last-child { border-bottom: 0; }
+    .find p { margin: 2px 0; font-size: 14px; }
+    td.num { text-align: right; white-space: nowrap; }
+    ol.qs li { margin: 4px 0; }
+  </style>
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <p class="eyebrow">Business · contracts</p>
+    <h1>Contract Risk Scanner</h1>
+    <p class="lead">Upload or paste a contract to find the clauses that usually cost small businesses money: automatic renewals, notice periods, payment terms, price rises, unlimited liability, indemnities, restraints and personal guarantees. Get the key dates for your calendar and a list of questions to ask.</p>
+    <div class="legal" role="note"><p><b>Not legal advice.</b> This tool reads the words with fixed rules — it does not understand the contract like a lawyer does. It can miss clauses, misread them, or flag things that are fine. Use it to prepare questions, then get a lawyer to review anything important before you sign.</p></div>
+    <p class="privacy">The contract is read inside this browser and never uploaded (unless you press the optional AI button with a Gemini key turned on). Saved scans stay in this browser only.</p>
+  </section>
+
+  <div class="panel no-print">
+    <div class="drop" id="drop"><b>Drop a contract here</b> or click to choose — PDF, Word (.docx) or text file.<br><span class="small">Scanned PDFs (photos of pages) have no text to read — run them through the <a href="../screenshot-reader/">Screenshot Reader</a> app first.</span></div>
+    <label for="text">…or paste the contract text</label>
+    <textarea id="text" class="prose" style="min-height:200px" placeholder="Paste the full contract here, including clause numbers."></textarea>
+    <div class="form-grid">
+      <div><label for="name">Name for this contract</label><input type="text" id="name" placeholder="e.g. IT support agreement — Cloudnine"></div>
+      <div><label for="type">Contract type</label><select id="type"><option value="">Detect automatically</option></select></div>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <button class="btn primary" id="scan" type="button">Scan contract</button>
+      <select id="sampleKind" aria-label="Which sample contract" style="width:auto;max-width:100%"></select>
+      <button class="btn" id="sample" type="button">Load sample data</button>
+      <button class="btn" id="clear" type="button">Clear</button>
+    </div>
+    <p class="small muted" id="status"></p>
+  </div>
+
+  <div id="out" hidden>
+    <div class="tabs" data-tabs="contract">
+      <button data-tab="summary">Summary</button>
+      <button data-tab="clauses">Clauses</button>
+      <button data-tab="questions">Questions to ask</button>
+      <button data-tab="details">Dates, money &amp; parties</button>
+    </div>
+    <section class="tab-panel" data-panel="summary"><div id="summary"></div></section>
+    <section class="tab-panel" data-panel="clauses">
+      <div class="row" style="margin-top:12px"><label class="row" style="margin:0;font-weight:400"><input type="checkbox" id="onlyFlagged" checked> Only clauses with something to check</label></div>
+      <div id="clauses"></div>
+    </section>
+    <section class="tab-panel" data-panel="questions"><div id="questions"></div><div id="aiBox" class="row" style="margin-top:10px"></div><div id="aiOut"></div></section>
+    <section class="tab-panel" data-panel="details"><div id="details"></div></section>
+    <div class="row no-print" style="margin-top:16px">
+      <button class="btn" id="save" type="button">Save this scan</button>
+      <button class="btn" id="print" type="button">Print / save as PDF</button>
+      <button class="btn" id="dlReport" type="button">Download report (HTML)</button>
+      <button class="btn" id="ics" type="button">Key dates to calendar (.ics)</button>
+    </div>
+  </div>
+
+  <h2>Saved scans</h2>
+  <div id="saved"></div>
+  <div class="row no-print" style="margin-top:10px">
+    <button class="btn small" id="export" type="button">Export saved scans (JSON)</button>
+    <button class="btn small" id="import" type="button">Import</button>
+  </div>
+</main>
+<script src="../../assets/core.js"></script>
+<script src="../../assets/ai.js"></script>
+<script src="./lib.js"></script>
+<script src="./samples.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

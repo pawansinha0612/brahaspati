@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vendor Comparison — Brahaspati</title>
+  <meta name="description" content="Compare 2–8 supplier quotes side by side: pull out prices and terms from PDFs or Word files, work out total cost over several years with GST, score with your own weights, spot red flags and print a recommendation memo. Free, and your data stays in your browser.">
+  <link rel="stylesheet" href="../../assets/style.css">
+  <style>
+    .form-grid { display: grid; gap: 0 12px; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
+    .form-grid .full { grid-column: 1 / -1; }
+    .check { display: flex; gap: 6px; align-items: center; font-weight: 400; }
+    .vcard { border-left: 4px solid var(--brand); }
+    .vcard h3 { margin: 0; }
+    .vhead { display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+    .vhead input { max-width: 320px; font-weight: 600; }
+    td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    td.best { background: color-mix(in srgb, var(--ok) 14%, transparent); font-weight: 700; }
+    .found { font-size: 13px; color: var(--muted); margin: 8px 0 0; }
+    .found li { max-width: none; }
+    .score-cell select { width: auto; padding: 4px 6px; font-size: 14px; }
+    .score-cell input { margin-top: 4px; font-size: 13px; padding: 4px 6px; min-width: 120px; }
+    .crit-row { display: grid; gap: 8px; grid-template-columns: 1fr 90px auto auto; align-items: center; margin: 6px 0; }
+    @media (max-width: 560px) { .crit-row { grid-template-columns: 1fr 70px; } .crit-row .check, .crit-row .btn { grid-column: auto; } }
+    .flag { margin: 4px 0; }
+    .memo-prev { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 16px; }
+    .memo-prev table { margin: 8px 0; }
+    .sens li { max-width: 72ch; }
+    ol.q li { margin: 4px 0; }
+  </style>
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <p class="eyebrow">Business · buying</p>
+    <h1>Vendor Comparison</h1>
+    <p class="lead">Put 2–8 supplier quotes side by side. Paste the text or drop in the PDF or Word file and the key terms are pulled out for you to check. See the true cost over the whole contract, score each vendor on what matters to you, and print a recommendation.</p>
+    <div class="row no-print">
+      <button class="btn primary" id="sample" type="button">Load sample data</button>
+      <button class="btn" id="backup" type="button">Download backup (JSON)</button>
+      <button class="btn" id="restore" type="button">Restore backup</button>
+      <button class="btn" id="wipe" type="button">Delete all data</button>
+    </div>
+    <p class="privacy">Everything stays in this browser — files are read on your device and never uploaded. Download a backup before clearing your browser.</p>
+  </section>
+
+  <div class="tabs" data-tabs="vendor">
+    <button data-tab="vendors">1. Vendors</button>
+    <button data-tab="costs">2. Costs</button>
+    <button data-tab="scoring">3. Scoring</button>
+    <button data-tab="compare">4. Side by side</button>
+    <button data-tab="flags">5. Red flags &amp; questions</button>
+    <button data-tab="memo">6. Memo</button>
+  </div>
+
+  <section class="tab-panel" data-panel="vendors">
+    <div class="panel no-print">
+      <h3 style="margin-top:0">Add a proposal</h3>
+      <p class="small muted">Paste the quote text, or drop a PDF, Word (.docx) or text file. Scanned PDFs (photos of paper) have no text to read — type the figures in instead.</p>
+      <label for="newName">Vendor name (optional — we try to find it)</label>
+      <input type="text" id="newName">
+      <label for="newText">Proposal text</label>
+      <textarea id="newText" class="prose" placeholder="Paste the quote or proposal here…"></textarea>
+      <div class="drop" id="drop" style="margin-top:10px">Drop a PDF, DOCX or TXT here, or click to choose</div>
+      <div class="row" style="margin-top:10px">
+        <button class="btn primary" id="addVendor" type="button">Read proposal and add vendor</button>
+        <button class="btn" id="addBlank" type="button">Add a blank vendor</button>
+        <span class="small muted" id="addStatus"></span>
+      </div>
+    </div>
+    <div id="vendorList"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="costs">
+    <div class="panel">
+      <h3 style="margin-top:0">How to compare costs</h3>
+      <div class="form-grid">
+        <div><label for="years">Years to compare</label><input type="number" id="years" min="1" max="15" step="1"></div>
+        <div><label for="volume">Expected units a month (for per-unit prices)</label><input type="number" id="volume" min="0" step="any"></div>
+        <div><label for="basis">Show totals</label><select id="basis"><option value="ex">Excluding GST</option><option value="inc">Including GST</option></select></div>
+      </div>
+      <p class="small muted">Every price is converted to the same GST basis (10%) before adding up. Total = one-off costs + monthly and annual fees for every year + per-unit rate × your volume, with any yearly price rise compounded. If a quote doesn’t say whether GST is included we treat it as excluding GST and flag it.</p>
+    </div>
+    <div id="costOut"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="scoring">
+    <div class="panel">
+      <h3 style="margin-top:0">Criteria and weights</h3>
+      <p class="small muted">Weights don’t need to add up to 100 — each one counts in proportion. Tick “from cost” to score a criterion automatically from total cost (cheapest = 5, dearest = 1).</p>
+      <div id="critList"></div>
+      <div class="row"><button class="btn small" id="addCrit" type="button">Add criterion</button><span class="small muted" id="weightSum"></span></div>
+    </div>
+    <div class="panel">
+      <h3 style="margin-top:0">Scores (1 = poor, 5 = excellent)</h3>
+      <div id="scoreGrid"></div>
+    </div>
+    <div class="panel">
+      <h3 style="margin-top:0">Result</h3>
+      <div id="scoreResult"></div>
+      <h3>Would the winner change?</h3>
+      <div class="row"><label for="sensPct" style="margin:0">Move weights by ±</label><select id="sensPct" style="width:auto"><option value="0.1">10%</option><option value="0.2">20%</option><option value="0.3">30%</option><option value="0.5">50%</option></select></div>
+      <div id="sensOut"></div>
+    </div>
+  </section>
+
+  <section class="tab-panel" data-panel="compare">
+    <p class="muted">Best value in each row is highlighted. Lower is better for costs, contract length, notice and response time; higher is better for uptime and warranty.</p>
+    <div class="row no-print"><button class="btn small" id="csvCompare" type="button">Download table (CSV)</button></div>
+    <div id="compareOut" style="margin-top:10px"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="flags">
+    <div class="row no-print"><label for="lockIn" style="margin:0">Flag lock-in longer than</label><input type="number" id="lockIn" min="1" style="width:90px"><span class="muted">months</span>
+      <label class="check" style="margin:0"><input type="checkbox" id="wantWarranty"> Warranty matters for this purchase</label></div>
+    <div id="flagsOut"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="memo">
+    <div class="panel no-print">
+      <div class="form-grid">
+        <div class="full"><label for="mTitle">Memo title</label><input type="text" id="mTitle"></div>
+        <div><label for="mBy">Prepared by</label><input type="text" id="mBy"></div>
+        <div><label for="mDate">Date</label><input type="date" id="mDate"></div>
+        <div class="full"><label for="mNotes">Your notes (reasons, conditions, next steps)</label><textarea id="mNotes" class="prose" style="min-height:90px"></textarea></div>
+      </div>
+      <div class="row" style="margin-top:10px" id="memoActions">
+        <button class="btn primary" id="printMemo" type="button">Print / save as PDF</button>
+        <button class="btn" id="dlMemo" type="button">Download memo (HTML)</button>
+      </div>
+      <div id="aiNote"></div>
+    </div>
+    <div class="memo-prev" id="memoOut"></div>
+  </section>
+</main>
+<script src="../../assets/core.js"></script>
+<script src="../../assets/ai.js"></script>
+<script src="./lib.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

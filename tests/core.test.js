@@ -27,7 +27,7 @@ test('apps.json is valid and every local app has a page', () => {
   for (const a of apps) {
     assert.ok(a.slug && a.name && a.cat && a.desc, 'missing field in ' + JSON.stringify(a));
     assert.ok(!slugs.has(a.slug), 'duplicate ' + a.slug); slugs.add(a.slug);
-    assert.ok(['business', 'creators', 'personal', 'utilities'].includes(a.cat));
+    assert.ok(['business', 'industry', 'ecommerce', 'creators', 'personal', 'utilities', 'developers'].includes(a.cat));
     if (!a.url) assert.ok(fs.existsSync(path.join(__dirname, '..', 'apps', a.slug, 'index.html')), 'no page for ' + a.slug);
   }
 });

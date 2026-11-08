@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Restaurant Profit Calculator — Brahaspati</title>
+  <meta name="description" content="Free recipe costing for cafes and restaurants: plate cost, food cost %, GST-inclusive menu prices, sub-recipes, wastage log, menu engineering and the effect of supplier price changes. Data stays in your browser.">
+  <link rel="stylesheet" href="../../assets/style.css">
+  <style>
+    .form-grid { display: grid; gap: 0 14px; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
+    .form-grid .full { grid-column: 1 / -1; }
+    td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .edit-table input, .edit-table select { padding: 5px 6px; font-size: 14px; min-width: 70px; }
+    .edit-table input.name { min-width: 160px; }
+    .edit-table td { padding: 4px 6px; vertical-align: middle; }
+    .check { display: flex; gap: 6px; align-items: center; font-weight: 400; }
+    .quad { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0; }
+    .quad > div { border: 1px solid var(--line); border-radius: 8px; padding: 10px; background: var(--panel); min-width: 0; }
+    .quad h3 { margin: 0 0 4px; font-size: 15px; }
+    .quad p { margin: 0 0 6px; font-size: 13px; color: var(--muted); }
+    .quad ul { margin: 0; padding-left: 18px; font-size: 14px; }
+    .scatter { width: 100%; height: auto; display: block; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+    .scatter text { fill: var(--ink); font-size: 11px; }
+    .scatter .axis { stroke: var(--muted); }
+    .scatter .dot { fill: var(--brand); }
+    .scatter .guide { stroke: var(--line); stroke-dasharray: 4 4; }
+  </style>
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <p class="eyebrow">Industry · hospitality</p>
+    <h1>Restaurant Profit Calculator</h1>
+    <p class="lead">Cost every dish down to the gram, including trim and waste, sauces made in-house and GST. See which dishes make money, what to charge, and what a supplier’s price rise really does to your margins.</p>
+    <div class="row no-print">
+      <button class="btn primary" id="sample" type="button">Load sample data</button>
+      <button class="btn" id="printReport" type="button">Print costing report</button>
+    </div>
+    <p class="privacy">Everything is saved in this browser only. Download a backup from Settings now and then.</p>
+  </section>
+
+  <div class="tabs" data-tabs="rp">
+    <button data-tab="dishes">Dishes</button>
+    <button data-tab="ingredients">Ingredients</button>
+    <button data-tab="recipes">Recipes</button>
+    <button data-tab="menu">Menu engineering</button>
+    <button data-tab="supplier">Supplier prices</button>
+    <button data-tab="waste">Wastage</button>
+    <button data-tab="stock">Stocktake</button>
+    <button data-tab="settings">Settings</button>
+  </div>
+
+  <section class="tab-panel" data-panel="dishes"><div id="dishes"></div></section>
+
+  <section class="tab-panel" data-panel="ingredients">
+    <p class="small muted">Enter what you buy: the pack size and price on the invoice, and the <b>yield %</b> — how much is usable after trimming, peeling or cooking loss (e.g. lettuce 70%, salmon fillet 92%). Density (grams per ml) is only needed if a recipe measures a solid in cups or spoons, or a liquid in grams.</p>
+    <div class="row"><button class="btn primary" id="addIng" type="button">+ Add ingredient</button><button class="btn" id="impIng" type="button">Import ingredients CSV</button><button class="btn" id="expIng" type="button">Download CSV</button>
+      <input type="search" id="ingSearch" placeholder="Search" aria-label="Search ingredients" style="max-width:220px"></div>
+    <div id="ingTable" style="margin-top:10px"></div>
+    <p class="small muted">CSV columns: name, supplier, packSize, packUnit, packPrice, yieldPct, density.</p>
+  </section>
+
+  <section class="tab-panel" data-panel="recipes">
+    <div class="row"><label for="recipePick" style="margin:0">Recipe</label><select id="recipePick" style="max-width:320px"></select>
+      <button class="btn" id="newDish" type="button">+ New dish</button><button class="btn" id="newSub" type="button">+ New sauce / sub-recipe</button></div>
+    <div id="recipeEditor" class="panel"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="menu">
+    <p class="small muted">Enter how many of each dish you sold over the same period (e.g. last 4 weeks, from your POS report), or import a CSV with columns <code>dish, qty</code>. Each dish is then placed by popularity and by contribution margin (price ex GST minus plate cost).</p>
+    <div class="row"><button class="btn" id="impSales" type="button">Import sales CSV</button><button class="btn" id="expMenu" type="button">Download results CSV</button></div>
+    <div id="salesInputs" style="margin-top:10px"></div>
+    <div id="menuResult"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="supplier">
+    <div class="panel">
+      <h2 style="margin-top:0">A supplier changed a price</h2>
+      <div class="form-grid">
+        <div><label for="spIng">Ingredient</label><select id="spIng"></select></div>
+        <div><label for="spPrice">New pack price ($)</label><input type="number" id="spPrice" min="0" step="0.01"></div>
+      </div>
+      <div class="row" style="margin-top:10px"><button class="btn" id="spPreview" type="button">Show the effect</button>
+        <button class="btn" id="spImport" type="button">Or import a new price list (CSV)</button></div>
+      <p class="small muted">Price list CSV columns: <code>name, packPrice</code> (optional <code>packSize, packUnit, supplier</code>). Names are matched to your ingredients, ignoring capitals.</p>
+    </div>
+    <div id="spResult"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="waste">
+    <div class="panel">
+      <h2 style="margin-top:0">Log wastage</h2>
+      <form id="wForm" class="form-grid">
+        <div><label for="wDate">Date</label><input type="date" id="wDate" required></div>
+        <div><label for="wIng">Ingredient</label><select id="wIng" required></select></div>
+        <div><label for="wQty">Quantity</label><input type="number" id="wQty" min="0" step="any" required></div>
+        <div><label for="wUnit">Unit</label><select id="wUnit"></select></div>
+        <div><label for="wReason">Reason</label><select id="wReason"><option>Spoiled</option><option>Expired</option><option>Over-production</option><option>Prep error</option><option>Dropped / returned</option><option>Staff meal</option><option>Other</option></select></div>
+        <div style="align-self:end"><button class="btn primary" type="submit">Add</button></div>
+      </form>
+    </div>
+    <div class="row"><label for="wFrom" style="margin:0">From</label><input type="date" id="wFrom" style="max-width:170px"><label for="wTo" style="margin:0">to</label><input type="date" id="wTo" style="max-width:170px">
+      <button class="btn small" id="wExport" type="button">Download CSV</button></div>
+    <div id="wResult"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="stock">
+    <p class="small muted">Theoretical food cost is what you <em>should</em> have used, worked out from dishes sold (Menu engineering tab) and your recipes. Actual is what left the cool room: opening stock + purchases − closing stock. A big gap usually means over-portioning, unrecorded waste, or theft. Count in each ingredient’s pack unit (e.g. kg).</p>
+    <div class="form-grid"><div><label for="foodSales">Food sales for the period, ex GST ($)</label><input type="number" id="foodSales" min="0" step="0.01"></div></div>
+    <div id="countTable" style="margin-top:10px"></div>
+    <div id="stockResult"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="settings">
+    <div class="panel">
+      <div class="form-grid">
+        <div><label for="sTarget">Target food cost %</label><input type="number" id="sTarget" min="1" max="100" step="0.5"></div>
+        <div><label for="sGst">GST rate %</label><input type="number" id="sGst" min="0" max="50" step="0.5"></div>
+        <div><label for="sRound">Round suggested prices up to ($)</label><select id="sRound"><option value="0">Don’t round</option><option value="0.1">$0.10</option><option value="0.5">$0.50</option><option value="1">$1.00</option></select></div>
+      </div>
+      <p class="small muted">Menu prices you enter are GST-inclusive (what the customer pays). Food cost % is worked out on the price without GST.</p>
+    </div>
+    <div class="row"><button class="btn" id="backup" type="button">Download backup</button><button class="btn" id="restore" type="button">Restore backup</button><button class="btn" id="clearAll" type="button">Delete all data</button></div>
+  </section>
+</main>
+<script src="../../assets/core.js"></script>
+<script src="./lib.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

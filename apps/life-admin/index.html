@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Life Admin Vault — Brahaspati</title>
+  <meta name="description" content="Free family document tracker: passports, visas, licences, Medicare, insurance, rego and certificates with renewal reminders, calendar files and a printable emergency summary. Stays on your device.">
+  <link rel="stylesheet" href="../../assets/style.css">
+  <style>
+    .form-grid { display: grid; gap: 0 14px; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+    .form-grid .full { grid-column: 1 / -1; }
+    .check { display: flex; gap: 6px; align-items: center; font-weight: 400; margin: 0; }
+    .thumbs { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+    .thumb { position: relative; width: 84px; height: 84px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--soft); display: flex; align-items: center; justify-content: center; font-size: 12px; text-align: center; }
+    .thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .thumb button { position: absolute; top: 2px; right: 2px; border: 0; border-radius: 99px; width: 24px; height: 24px; background: var(--panel); color: var(--bad); cursor: pointer; font-weight: 700; }
+    .doc h3 { margin: 0 0 2px; font-size: 16px; overflow-wrap: anywhere; }
+    .doc p { margin: 2px 0; }
+    .pill-mute { font-size: 12px; padding: 1px 8px; border-radius: 99px; font-weight: 600; background: var(--soft); color: var(--muted); }
+    .file-btn { position: relative; overflow: hidden; }
+    .file-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+    .notice { border-left: 4px solid var(--warn); }
+    .up-row { display: flex; gap: 10px; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); }
+    .up-row > div { min-width: 0; overflow-wrap: anywhere; }
+  </style>
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <p class="eyebrow">Personal · family admin</p>
+    <h1>Life Admin Vault</h1>
+    <p class="lead">Passports, visas, licences, Medicare, insurance, rego and certificates for everyone in the family — with what’s expiring, when to start renewing, calendar reminders and a printable emergency summary.</p>
+    <div class="row no-print">
+      <button class="btn primary" id="addTop" type="button">Add a document</button>
+      <button class="btn" id="sample" type="button">Load sample data</button>
+    </div>
+    <p class="privacy">Everything stays on this device — nothing is uploaded. By default only the last 4 characters of ID numbers are kept. Clearing your browser data deletes it all, so download a backup (Backup tab).</p>
+  </section>
+
+  <div class="tabs" data-tabs="life">
+    <button data-tab="overview">Next 90 days</button>
+    <button data-tab="docs">Documents</button>
+    <button data-tab="people">People</button>
+    <button data-tab="travel">Travel check</button>
+    <button data-tab="summary">Emergency summary</button>
+    <button data-tab="backup">Backup &amp; storage</button>
+  </div>
+
+  <section class="tab-panel" data-panel="overview">
+    <div class="stat-row" id="stats" style="margin-top:14px"></div>
+    <div class="panel">
+      <h2 style="margin-top:0">What needs doing</h2>
+      <div id="upcoming"></div>
+      <div class="row" style="margin-top:10px"><button class="btn primary" type="button" id="ics">Add all reminders to my calendar (.ics)</button></div>
+      <p class="small muted">The calendar file has a “start renewing” event on each renew-by date and an event on each expiry date (with an alert a week before). Re-download it after you add or renew documents.</p>
+    </div>
+  </section>
+
+  <section class="tab-panel" data-panel="docs">
+    <div id="editor" class="panel" hidden></div>
+    <div class="panel">
+      <div class="row"><label for="fPerson" style="margin:0">Show</label><select id="fPerson" style="width:auto"></select></div>
+      <div id="docList" style="margin-top:10px"></div>
+    </div>
+  </section>
+
+  <section class="tab-panel" data-panel="people">
+    <div class="panel">
+      <h2 style="margin-top:0" id="pTitle">Add a family member</h2>
+      <form id="pForm" class="form-grid">
+        <div><label for="p-name">Name *</label><input type="text" id="p-name" required></div>
+        <div><label for="p-dob">Date of birth</label><input type="date" id="p-dob"></div>
+        <div><label for="p-phone">Phone</label><input type="text" id="p-phone"></div>
+        <div><label for="p-blood">Blood type</label><input type="text" id="p-blood"></div>
+        <div><label for="p-medical">Medical notes / allergies</label><input type="text" id="p-medical"></div>
+        <div><label for="p-medicines">Medicines</label><input type="text" id="p-medicines"></div>
+        <div><label for="p-doctor">Doctor</label><input type="text" id="p-doctor"></div>
+        <div><label for="p-emergency">Emergency contact</label><input type="text" id="p-emergency"></div>
+        <div class="full row"><button class="btn primary" type="submit">Save person</button><button class="btn" type="button" id="pCancel">Clear</button></div>
+      </form>
+    </div>
+    <div id="people"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="travel">
+    <div class="panel">
+      <h2 style="margin-top:0">Passport check for a trip</h2>
+      <p class="small muted">Many countries need your passport valid for at least 6 months beyond your stay. Always check the rules for each country you visit (search “Smartraveller” plus the country).</p>
+      <div class="form-grid">
+        <div><label for="tDepart">Leaving</label><input type="date" id="tDepart"></div>
+        <div><label for="tReturn">Coming home</label><input type="date" id="tReturn"></div>
+        <div><label for="tMonths">Months of validity needed</label><input type="number" id="tMonths" value="6" min="0" max="12"></div>
+      </div>
+      <div id="travel" style="margin-top:12px"></div>
+    </div>
+  </section>
+
+  <section class="tab-panel" data-panel="summary">
+    <div class="panel">
+      <h2 style="margin-top:0">Emergency summary</h2>
+      <p>A printable page with each person’s medical notes, emergency contacts and documents (numbers masked unless you chose to keep them in full). Useful on the fridge, in the car, or with a carer.</p>
+      <label for="sExtra">Extra note printed at the top (optional)</label>
+      <input type="text" id="sExtra" placeholder="e.g. Spare key with neighbour at no. 12. Wills are with Smith Lawyers.">
+      <div class="row" style="margin-top:10px"><button class="btn primary" type="button" id="sPrint">Print</button><button class="btn" type="button" id="sDl">Download (HTML)</button></div>
+    </div>
+    <div class="panel"><h2 style="margin-top:0">Renewal checklists</h2><p class="small muted">General steps only — rules differ by state and change over time, so always check the official website.</p><div id="checklists"></div></div>
+  </section>
+
+  <section class="tab-panel" data-panel="backup">
+    <div class="panel" id="storage"></div>
+    <div class="panel">
+      <h2 style="margin-top:0">Backup</h2>
+      <p class="small">One file with every person, document and attached photo. <b>It contains personal information</b> — store it somewhere private (for example an encrypted USB drive or a password-protected folder). Restoring replaces what is here now.</p>
+      <div class="row">
+        <button class="btn primary" type="button" id="backup">Download full backup</button>
+        <span class="btn file-btn">Restore from backup<input type="file" id="restore" accept=".json,application/json"></span>
+        <button class="btn" type="button" id="csv">Export list (CSV)</button>
+        <button class="btn" type="button" id="wipe">Delete everything</button>
+      </div>
+      <p class="small muted" id="backupMsg"></p>
+    </div>
+  </section>
+</main>
+<script src="../../assets/core.js"></script>
+<script src="../home-inventory/vault-kit.js"></script>
+<script src="./lib.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

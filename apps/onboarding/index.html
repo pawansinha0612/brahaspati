@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Employee Onboarding — Brahaspati</title>
+  <meta name="description" content="Free onboarding checklists for new starters in Australian small businesses: role templates, due dates, documents received, training with expiry reminders, equipment, a printable welcome pack, calendar reminders and CSV export. Data stays in your browser.">
+  <link rel="stylesheet" href="../../assets/style.css">
+  <style>
+    .form-grid { display: grid; gap: 0 12px; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
+    .form-grid .full { grid-column: 1 / -1; }
+    .check { display: flex; gap: 6px; align-items: center; font-weight: 400; margin: 0; }
+    .prog { background: var(--soft); border-radius: 4px; height: 8px; min-width: 80px; }
+    .prog i { display: block; height: 8px; border-radius: 4px; background: var(--ok); }
+    .task { display: grid; grid-template-columns: auto 1fr 130px 150px auto; gap: 8px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--line); }
+    .task.done .t-title { text-decoration: line-through; color: var(--muted); }
+    .task select, .task input[type=date] { padding: 4px 6px; font-size: 13px; }
+    .task .t-title { font-size: 15px; }
+    @media (max-width: 640px) { .task { grid-template-columns: auto 1fr; } .task > :nth-child(n+3) { grid-column: 2; } }
+    .pill-mute { font-size: 12px; padding: 1px 8px; border-radius: 99px; font-weight: 600; background: var(--soft); color: var(--muted); }
+    td input[type=date], td input[type=text], td input[type=number] { padding: 4px 6px; font-size: 13px; min-width: 110px; }
+    .warnbox { border-left: 4px solid var(--warn); }
+    .ph-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+    .ph-head h3 { margin-bottom: 0; }
+    .pack { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 16px; }
+  </style>
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <p class="eyebrow">Business · people</p>
+    <h1>Employee Onboarding</h1>
+    <p class="lead">A checklist for every new starter: what to do before day 1, on day 1, in week 1 and over the first three months — who does it and by when. Track paperwork received, training and expiry dates, and equipment handed out, then print a welcome pack.</p>
+    <div class="row no-print">
+      <button class="btn primary" id="sample" type="button">Load sample data</button>
+      <button class="btn" id="backup" type="button">Download backup (JSON)</button>
+      <button class="btn" id="restore" type="button">Restore backup</button>
+      <button class="btn" id="wipe" type="button">Delete all data</button>
+    </div>
+    <p class="privacy">Everything stays in this browser. <b>Never type tax file numbers, bank details or ID numbers here</b> — this tool only records whether a form was received. Keep those in your payroll system.</p>
+  </section>
+
+  <div class="tabs" data-tabs="onb">
+    <button data-tab="people">New starters</button>
+    <button data-tab="person">Checklist</button>
+    <button data-tab="due">Overdue &amp; due soon</button>
+    <button data-tab="training">Training</button>
+    <button data-tab="templates">Templates</button>
+    <button data-tab="settings">Welcome pack settings</button>
+  </div>
+
+  <section class="tab-panel" data-panel="people">
+    <div class="panel no-print">
+      <h3 style="margin-top:0">Add a new starter</h3>
+      <form id="addForm" class="form-grid">
+        <div><label for="a-name">Name *</label><input type="text" id="a-name" required></div>
+        <div><label for="a-position">Position</label><input type="text" id="a-position"></div>
+        <div><label for="a-role">Template</label><select id="a-role"></select></div>
+        <div><label for="a-type">Employment type</label><select id="a-type"><option value="full-time">Full-time</option><option value="part-time">Part-time</option><option value="casual">Casual</option><option value="fixed-term">Fixed term</option></select></div>
+        <div><label for="a-start">Start date *</label><input type="date" id="a-start" required></div>
+        <div><label for="a-manager">Manager / buddy</label><input type="text" id="a-manager"></div>
+        <div><label for="a-prob">Probation (months, 0 = none)</label><input type="number" id="a-prob" min="0" max="12" value="3"></div>
+        <div class="full row" style="margin-top:10px"><button class="btn primary" type="submit">Add and build checklist</button></div>
+      </form>
+    </div>
+    <div id="peopleStats" class="stat-row"></div>
+    <div class="row no-print" style="margin-top:12px">
+      <button class="btn small" id="csvTasks" type="button">All tasks (CSV)</button>
+      <button class="btn small" id="csvSummary" type="button">Progress summary (CSV)</button>
+      <button class="btn small" id="icsAll" type="button">Key dates for everyone (.ics)</button>
+    </div>
+    <div id="peopleList" style="margin-top:10px"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="person">
+    <div class="row no-print"><label for="pick" style="margin:0">Person</label><select id="pick" style="width:auto;min-width:200px"></select></div>
+    <div id="personOut"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="due">
+    <div class="row no-print"><label for="ownerFilter" style="margin:0">Owner</label><select id="ownerFilter" style="width:auto"><option value="">Everyone</option></select>
+      <label for="soonDays" style="margin:0">Due within</label><input type="number" id="soonDays" min="1" value="7" style="width:80px"><span class="muted">days</span></div>
+    <div id="dueOut"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="training">
+    <p class="muted">Training with an expiry (first aid, CPR, licences, refreshers) is listed when it has expired or expires in the next 60 days. Download the calendar file to get a reminder 30 days before each expiry.</p>
+    <div class="row no-print"><button class="btn small" id="csvTraining" type="button">Training register (CSV)</button><button class="btn small" id="icsTraining" type="button">Expiry reminders (.ics)</button></div>
+    <div id="trainingOut"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="templates">
+    <p class="muted">Each new starter gets a copy of the template you choose. You can then add, remove or re-date tasks for that person without changing the template.</p>
+    <div class="row"><label for="tplPick" style="margin:0">Template</label><select id="tplPick" style="width:auto"></select></div>
+    <div id="tplOut"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="settings">
+    <div class="panel">
+      <h3 style="margin-top:0">Shown in every welcome pack</h3>
+      <form id="coForm" class="form-grid">
+        <div><label for="co-name">Business name</label><input type="text" id="co-name"></div>
+        <div><label for="co-startTime">Usual start time on day 1</label><input type="text" id="co-startTime" placeholder="8:30am"></div>
+        <div class="full"><label for="co-address">Where to go on day 1</label><input type="text" id="co-address"></div>
+        <div class="full"><label for="co-bring">What to bring</label><input type="text" id="co-bring" placeholder="Photo ID, lunch, enclosed shoes"></div>
+        <div class="full"><label for="co-welcome">Welcome message</label><textarea id="co-welcome" class="prose" style="min-height:70px"></textarea></div>
+        <div class="full"><label for="co-contacts">Useful contacts (names and work phone or email)</label><textarea id="co-contacts" class="prose" style="min-height:70px"></textarea></div>
+        <div class="full row" style="margin-top:10px" id="coActions"><button class="btn primary" type="submit">Save</button></div>
+      </form>
+      <div id="aiNote"></div>
+    </div>
+  </section>
+</main>
+<script src="../../assets/core.js"></script>
+<script src="../../assets/ai.js"></script>
+<script src="./lib.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

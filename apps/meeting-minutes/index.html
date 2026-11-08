@@ -3,22 +3,28 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Meeting Minutes — Brahaspati</title>
-  <meta name="description" content="Paste a Teams, Zoom or Otter transcript (or VTT/SRT captions, or rough notes) and get decisions, action items with owners and due dates, open questions, risks and talk-time. Export as email, Markdown or calendar file.">
+  <title>Meeting Minutes &amp; Decision Tracker — Brahaspati</title>
+  <meta name="description" content="Paste a Teams, Zoom or Otter transcript (or VTT/SRT captions, or rough notes) and get decisions, action items with owners and due dates, open questions and risks — then track actions and decisions across meetings, spot overdue and carried-over items, and build the next agenda.">
   <link rel="stylesheet" href="../../assets/style.css">
   <style>
     .act input[type=text], .act input[type=date] { padding: 5px 7px; font-size: 14px; }
     .act td:nth-child(1) { min-width: 110px; } .act td:nth-child(2) { min-width: 200px; } .act td:nth-child(3) { min-width: 140px; }
     .list { padding-left: 20px; } .list li { margin: 4px 0; overflow-wrap: anywhere; }
     .who { color: var(--muted); font-size: 13px; }
+    .tr td select { width: auto; padding: 4px 6px; font-size: 14px; }
+    .tr td input[type=date] { width: auto; padding: 4px 6px; font-size: 14px; }
+    .tr tr.overdue td:first-child { box-shadow: inset 3px 0 0 var(--bad); }
+    .tr td { overflow-wrap: anywhere; } .tr td:nth-child(2) { min-width: 200px; }
+    .person { margin: 10px 0; }
+    .mtg { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
   </style>
 </head>
 <body>
 <main class="wrap">
   <section class="hero">
     <p class="eyebrow">Utilities</p>
-    <h1>Meeting Minutes</h1>
-    <p class="lead">Paste a transcript or your rough notes. You’ll get the decisions, action items with owners and due dates, open questions and risks — ready to email, save as Markdown or drop into your calendar.</p>
+    <h1>Meeting Minutes &amp; Decision Tracker</h1>
+    <p class="lead">Paste a transcript or your rough notes. You’ll get the decisions, action items with owners and due dates, open questions and risks — ready to email, save as Markdown or drop into your calendar. Save each meeting to your library to track every action and decision across meetings.</p>
   </section>
 
   <div class="panel">
@@ -43,7 +49,7 @@
       <h2 style="margin-top:0">Action items</h2>
       <p class="small muted" style="margin-top:-4px">Edit owners, wording and due dates here — the email, Markdown and calendar file update to match. Clear a row’s action to drop it.</p>
       <div class="table-wrap act"><table><thead><tr><th>Owner</th><th>Action</th><th>Due</th></tr></thead><tbody id="acts"></tbody></table></div>
-      <div class="row" style="margin-top:10px"><button class="btn small" id="addAct" type="button">+ Add action</button><button class="btn small" id="ics" type="button">Download .ics (actions with dates)</button></div>
+      <div class="row" style="margin-top:10px"><button class="btn small" id="addAct" type="button">+ Add action</button><button class="btn small" id="ics" type="button">Download .ics (actions with dates)</button><button class="btn small primary" id="saveLib" type="button">Save to tracker</button><span class="small muted" id="saveNote"></span></div>
     </div>
 
     <div class="cols-2">
@@ -80,7 +86,52 @@
     <div id="aiOut"></div>
   </div>
 
-  <p class="privacy">Your transcript is processed in your browser with fixed rules — nothing is uploaded and nothing is recorded. The rules look for phrases like “I’ll”, “agreed” and “by Friday”, so always skim the result. If you turn on the optional AI helper, the ✨ button sends the transcript to the AI you chose.</p>
+  <section id="tracker" style="margin-top:28px">
+    <h2>Decision &amp; action tracker</h2>
+    <p class="small muted" style="margin-top:-4px">Every meeting you save lands here. When the same action comes up again in a later meeting it’s marked “carried over” (matched on similar wording), and anything past its due date is flagged.</p>
+    <div class="stat-row" id="trStats"></div>
+    <div class="row" style="margin-top:10px"><button class="btn small" id="trSample" type="button">Load sample meetings</button><button class="btn small" id="trBackup" type="button">Backup (JSON)</button><button class="btn small" id="trRestoreBtn" type="button">Restore</button><input type="file" id="trRestore" accept=".json,application/json" hidden><button class="btn small" id="trClear" type="button">Clear tracker</button></div>
+    <div class="tabs" data-tabs="tr">
+      <button data-tab="tr-actions">Actions</button>
+      <button data-tab="tr-people">By person</button>
+      <button data-tab="tr-decisions">Decision log</button>
+      <button data-tab="tr-meetings">Meetings</button>
+      <button data-tab="tr-agenda">Next agenda</button>
+    </div>
+    <section class="tab-panel" data-panel="tr-actions">
+      <div class="panel">
+        <div class="row">
+          <div style="min-width:150px"><label for="trStatus" style="margin-top:0">Status</label><select id="trStatus"><option value="active">Open + blocked</option><option value="overdue">Overdue only</option><option value="carried">Carried over</option><option value="all">All</option><option value="done">Done</option><option value="dropped">Dropped</option></select></div>
+          <div style="min-width:150px"><label for="trOwner" style="margin-top:0">Owner</label><select id="trOwner"><option value="">Everyone</option></select></div>
+          <div style="flex:1;min-width:160px"><label for="trSearch" style="margin-top:0">Search</label><input id="trSearch" type="search" placeholder="Words in the action"></div>
+        </div>
+        <div id="trList" style="margin-top:12px"></div>
+        <div class="row" style="margin-top:10px"><button class="btn small" id="trCsv" type="button">Download CSV</button><button class="btn small" id="trMd" type="button">Download Markdown</button><button class="btn small" id="trIcs" type="button">Open actions to calendar (.ics)</button></div>
+      </div>
+    </section>
+    <section class="tab-panel" data-panel="tr-people"><div id="trPeople"></div></section>
+    <section class="tab-panel" data-panel="tr-decisions">
+      <div class="panel">
+        <label for="decSearch" style="margin-top:0">Search decisions</label><input id="decSearch" type="search" placeholder="e.g. Stripe, launch, budget">
+        <ul class="list" id="decList" style="margin-top:10px"></ul>
+        <div class="row"><button class="btn small" id="decCsv" type="button">Download CSV</button></div>
+      </div>
+    </section>
+    <section class="tab-panel" data-panel="tr-meetings"><div class="panel"><div id="mtgList"></div></div></section>
+    <section class="tab-panel" data-panel="tr-agenda">
+      <div class="panel">
+        <div class="row">
+          <div style="flex:1;min-width:160px"><label for="agTitle" style="margin-top:0">Next meeting</label><input id="agTitle" type="text" value="Weekly sync"></div>
+          <div style="min-width:160px"><label for="agDate" style="margin-top:0">Date</label><input id="agDate" type="date"></div>
+        </div>
+        <p class="small muted">Built from overdue, blocked, carried-over and open actions, plus open questions and risks from the last meeting.</p>
+        <textarea id="agenda" style="min-height:280px" aria-label="Agenda in Markdown"></textarea>
+        <div class="row" style="margin-top:10px"><button class="btn" id="agCopy" type="button">Copy</button><button class="btn" id="agDl" type="button">Download .md</button><a class="btn" id="agMail" href="#">Email it</a></div>
+      </div>
+    </section>
+  </section>
+
+  <p class="privacy">Saved meetings stay in this browser (local storage) — use Backup to keep a copy. Your transcript is processed in your browser with fixed rules — nothing is uploaded and nothing is recorded. The rules look for phrases like “I’ll”, “agreed” and “by Friday”, so always skim the result. If you turn on the optional AI helper, the ✨ button sends the transcript to the AI you chose.</p>
   <div id="aiNote"></div>
 </main>
 <script src="../../assets/core.js"></script>

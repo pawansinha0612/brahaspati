@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Competitor Price Watcher — Brahaspati</title>
+  <meta name="description" content="Set up a free daily competitor price tracker on GitHub Actions (no server, no coding), then chart the price history, see who undercuts you and every change, right in your browser.">
+  <link rel="stylesheet" href="../../assets/style.css">
+  <style>
+    .prod-row { display: grid; grid-template-columns: 1.1fr 1.8fr 1fr 1.2fr auto; gap: 8px; align-items: end; padding: 8px 0; border-bottom: 1px solid var(--line); }
+    .prod-row label { margin: 0 0 2px; font-size: 12px; font-weight: 600; color: var(--muted); }
+    .prod-row .checks { grid-column: 1 / -1; display: flex; gap: 16px; flex-wrap: wrap; font-size: 14px; }
+    .prod-row .checks label { display: flex; gap: 6px; align-items: center; font-weight: 400; color: var(--ink); font-size: 14px; margin: 0; }
+    @media (max-width: 760px) { .prod-row { grid-template-columns: 1fr; } }
+    .settings { display: grid; gap: 0 14px; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+    .file pre { max-height: 360px; white-space: pre; }
+    .file .path { font-family: var(--mono); font-size: 14px; font-weight: 700; overflow-wrap: anywhere; }
+    .steps li { margin: 8px 0; }
+    code { background: var(--code); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+    pre code { background: none; padding: 0; }
+    .chart { width: 100%; height: auto; display: block; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+    .chart text { fill: var(--muted); font-size: 11px; }
+    .chart .grid { stroke: var(--line); }
+    .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; margin: 6px 0; }
+    .legend i { display: inline-block; width: 14px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 4px; }
+    .c0 { stroke: var(--brand); background: var(--brand); } .c1 { stroke: var(--accent); background: var(--accent); } .c2 { stroke: var(--ok); background: var(--ok); }
+    .c3 { stroke: var(--warn); background: var(--warn); } .c4 { stroke: var(--bad); background: var(--bad); } .c5 { stroke: var(--muted); background: var(--muted); }
+    .alert { border-left: 4px solid var(--bad); }
+    td.num, th.num { text-align: right; white-space: nowrap; }
+  </style>
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <p class="eyebrow">Sellers · pricing</p>
+    <h1>Competitor Price Watcher</h1>
+    <p class="lead">Track competitors’ prices for the products you sell. A free GitHub robot checks their public product pages every day, keeps a price history and emails you when a price moves. Then load that history here to see charts, who is undercutting you and every change.</p>
+    <div class="row no-print"><button class="btn primary" id="sample" type="button">Load sample data</button></div>
+    <p class="privacy">This page doesn’t visit any website and doesn’t send your list anywhere — it only writes files for you to copy. Your settings are saved in this browser.</p>
+  </section>
+
+  <div class="tabs" data-tabs="pw">
+    <button data-tab="setup">1. Set up the tracker</button>
+    <button data-tab="test">Test a page</button>
+    <button data-tab="analyse">2. Analyse prices</button>
+  </div>
+
+  <section class="tab-panel" data-panel="setup">
+    <div class="panel">
+      <h2 style="margin-top:0">Why GitHub, and not this page?</h2>
+      <p>A web page can’t read other shops’ websites (browsers block that) and can’t run while it’s closed. So this page writes three small files and <strong>GitHub Actions</strong> runs them free on GitHub’s computers once a day. You need a free GitHub account; no coding and no credit card.</p>
+      <ul class="small">
+        <li><strong>How it reads prices:</strong> most shops publish the price in hidden “structured data” for Google (JSON-LD or meta tags), so usually you only paste the product page address. If that fails, add a CSS selector — use the <em>Test a page</em> tab to find one.</li>
+        <li><strong>Be polite and legal:</strong> it checks one page at a time, a few seconds apart, says who it is in its user agent, and skips pages that the site’s <code>robots.txt</code> asks tools not to visit. Only watch public pages, read each site’s terms of use, and don’t check more often than you need — once a day is plenty.</li>
+        <li><strong>Honest limits:</strong> pages behind a login, a CAPTCHA or strong bot-blocking won’t work. Prices built only by JavaScript may need the “needs a real browser” option (slower). Scheduled runs can start 5–30 minutes late; a public repository with no activity for 60 days pauses its schedule until you re-enable it.</li>
+      </ul>
+    </div>
+
+    <div class="panel">
+      <h2 style="margin-top:0">What should it watch?</h2>
+      <p class="small muted" style="margin-top:-4px">Use the same <b>Group</b> name for your product and the competitors selling the same thing, and tick “This is mine” on yours — that’s how undercuts are found.</p>
+      <div id="prods"></div>
+      <div class="row" style="margin-top:10px"><button class="btn small" id="addProd" type="button">+ Add a product page</button></div>
+      <h3>Settings</h3>
+      <div class="settings">
+        <div><label for="schedule">How often</label><select id="schedule"><option value="daily">Once a day</option><option value="twice">Twice a day</option><option value="weekly">Once a week</option></select></div>
+        <div id="dayWrap"><label for="weekday">Day</label><select id="weekday"><option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4">Thursday</option><option value="5">Friday</option><option value="6">Saturday</option><option value="0">Sunday</option></select></div>
+        <div><label for="time">At (your time)</label><input id="time" type="time" value="07:23"></div>
+        <div><label for="threshold">Tell me when a price moves by at least (%)</label><input id="threshold" type="number" min="0" max="100" step="0.5" value="1"></div>
+        <div><label for="contact">Contact email in the user agent (optional)</label><input id="contact" type="email" placeholder="you@yourshop.com.au"></div>
+      </div>
+      <p class="small muted" id="cronNote"></p>
+    </div>
+
+    <div class="panel">
+      <h2 style="margin-top:0">Your three files</h2>
+      <div class="tabs" data-tabs="files"><button data-tab="wf">Workflow</button><button data-tab="js">watch.js</button><button data-tab="json">products.json</button></div>
+      <section class="tab-panel file" data-panel="wf"></section>
+      <section class="tab-panel file" data-panel="js"></section>
+      <section class="tab-panel file" data-panel="json"></section>
+      <div class="row" style="margin-top:12px"><button class="btn" id="dlAll" type="button">Download all three files</button></div>
+    </div>
+
+    <div class="panel">
+      <h2 style="margin-top:0">Put it on GitHub (about 10 minutes)</h2>
+      <ol class="steps">
+        <li>Go to <a href="https://github.com/signup" target="_blank" rel="noopener">github.com</a> and sign in (or create a free account).</li>
+        <li>Click <strong>+</strong> (top right) → <strong>New repository</strong>. Name it e.g. <code>price-watcher</code>. Choose <strong>Private</strong> if you don’t want others to see your competitor list, tick <strong>Add a README file</strong>, then <strong>Create repository</strong>.</li>
+        <li>Click <strong>Add file → Create new file</strong>. Type the name <code>.github/workflows/price-watcher.yml</code> (typing <code>/</code> makes the folders). Paste the <em>Workflow</em> file, then <strong>Commit changes…</strong> → <strong>Commit changes</strong>.</li>
+        <li>Again <strong>Add file → Create new file</strong>: name <code>watcher/watch.js</code>, paste <em>watch.js</em>, commit.</li>
+        <li>Once more: <code>watcher/products.json</code>, paste <em>products.json</em>, commit.</li>
+        <li>Open <strong>Settings → Actions → General</strong>. Under <strong>Workflow permissions</strong> choose <strong>Read and write permissions</strong> → <strong>Save</strong>. (This lets it save prices.csv and open issues with GitHub’s own token — no passwords.)</li>
+        <li>Open the <strong>Actions</strong> tab (click <strong>I understand my workflows…</strong> if asked) → <strong>Price watcher</strong> → <strong>Run workflow</strong>. After about a minute, open the run: the log lists each product and the price found. Fix any “not-found” rows by adding a selector.</li>
+        <li>To get emails when prices move, click <strong>Watch</strong> at the top of the repository → <strong>Custom → Issues</strong>.</li>
+        <li>Later, open <code>watcher/prices.csv</code> on GitHub, click <strong>Download raw file</strong> (or copy the page address if the repository is public) and load it in <em>2. Analyse prices</em>.</li>
+      </ol>
+      <p class="small muted">To stop: Actions → Price watcher → ••• → <strong>Disable workflow</strong>. A private repository uses free Actions minutes (2,000 a month); one daily check uses well under a minute.</p>
+    </div>
+  </section>
+
+  <section class="tab-panel" data-panel="test">
+    <div class="panel">
+      <h2 style="margin-top:0">Will the tracker find the price on this page?</h2>
+      <ol class="small">
+        <li>Open the competitor’s product page in your browser. Right-click → <strong>View page source</strong> (or press Ctrl+U / ⌥⌘U).</li>
+        <li>Select all (Ctrl+A / ⌘A), copy, and paste it below. Nothing is sent anywhere.</li>
+        <li>Leave the selector empty first. If no price is found, right-click the price on the real page → <strong>Inspect</strong>, note its class (e.g. <code>class="price-now"</code>) and try <code>.price-now</code>.</li>
+      </ol>
+      <label for="testHtml">Page source</label><textarea id="testHtml" placeholder="&lt;html&gt;…"></textarea>
+      <label for="testSel">CSS selector (optional)</label><input type="text" id="testSel" placeholder=".product-price .amount   or   #price@data-price">
+      <div class="row" style="margin-top:10px"><button class="btn primary" id="testBtn" type="button">Find the price</button><button class="btn" id="testSample" type="button">Try an example page</button></div>
+      <div id="testOut" style="margin-top:10px"></div>
+      <p class="small muted">Supported selectors: tag, <code>.class</code>, <code>#id</code>, <code>[attr]</code>, <code>[attr=value]</code>, <code>[attr*=part]</code>, combined (<code>span.price.now</code>) and nested (<code>.product .price</code>). Add <code>@attribute</code> to read an attribute, e.g. <code>#price@data-price</code>.</p>
+    </div>
+  </section>
+
+  <section class="tab-panel" data-panel="analyse">
+    <div class="panel">
+      <h2 style="margin-top:0">Load your price history</h2>
+      <div class="drop" id="csvDrop">Drop <code>prices.csv</code> here, or click to choose</div>
+      <label for="csvUrl">…or paste its GitHub address (public repositories only)</label>
+      <div class="row"><input type="url" id="csvUrl" placeholder="https://github.com/you/price-watcher/blob/main/watcher/prices.csv" style="flex:1;min-width:200px"><button class="btn" id="csvFetch" type="button">Load</button></div>
+      <p class="small muted">A private repository’s file can’t be fetched from a web page — download it on GitHub and drop it above.</p>
+    </div>
+    <div id="analysis"></div>
+  </section>
+</main>
+<script src="../../assets/core.js"></script>
+<script src="./lib.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

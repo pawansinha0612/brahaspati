@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Digital Product Store — Brahaspati</title>
+  <meta name="description" content="Build a free, fast storefront page for your templates, guides and downloads. Use your own Gumroad, Lemon Squeezy, Stripe or PayPal links, preview it live, then download and host it free on GitHub Pages or Netlify.">
+  <link rel="stylesheet" href="../../assets/style.css">
+  <style>
+    .form-grid { display: grid; gap: 0 14px; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+    .form-grid .full { grid-column: 1 / -1; }
+    .prod { border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; margin: 12px 0; background: var(--panel); }
+    .prod-head { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .prod-head h3 { margin: 0; flex: 1; min-width: 140px; font-size: 16px; overflow-wrap: anywhere; }
+    .thumb { width: 96px; height: 72px; object-fit: cover; border-radius: 6px; border: 1px solid var(--line); background: var(--soft); display: block; }
+    .img-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
+    .colors { display: flex; gap: 14px; flex-wrap: wrap; }
+    .colors label { display: flex; gap: 8px; align-items: center; font-weight: 400; }
+    input[type=color] { width: 44px; height: 32px; padding: 0; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); }
+    .pair { display: grid; grid-template-columns: 1fr 2fr auto; gap: 8px; align-items: start; margin: 8px 0; }
+    @media (max-width: 640px) { .pair { grid-template-columns: 1fr; } }
+    .preview-wrap { border: 1px solid var(--line); border-radius: var(--radius); background: var(--soft); padding: 10px; overflow: hidden; }
+    .preview-wrap iframe { display: block; width: 100%; height: 720px; border: 0; border-radius: 6px; background: #fff; margin: 0 auto; max-width: 100%; }
+    .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; flex-wrap: wrap; }
+    .seg button { border: 0; background: var(--panel); color: var(--ink); padding: 6px 12px; font: inherit; font-size: 14px; cursor: pointer; }
+    .seg button[aria-pressed="true"] { background: var(--brand); color: var(--brand-ink); }
+    .steps li { margin: 6px 0; }
+    code { background: var(--code); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+  </style>
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <p class="eyebrow">Sellers · storefront</p>
+    <h1>Digital Product Store</h1>
+    <p class="lead">Make a clean, fast shop page for your templates, guides, printables and courses. Each Buy button goes to your own Gumroad, Lemon Squeezy, Stripe or PayPal link — they take the payment and deliver the file. Download the finished site and host it free.</p>
+    <div class="row no-print"><button class="btn primary" id="sample" type="button">Load sample data</button></div>
+    <p class="privacy">Everything — including product images — is saved in this browser only. This tool never handles payments. <span id="storage"></span></p>
+  </section>
+
+  <div class="tabs" data-tabs="sb">
+    <button data-tab="store">Store</button>
+    <button data-tab="products">Products</button>
+    <button data-tab="extras">FAQ &amp; reviews</button>
+    <button data-tab="preview">Preview &amp; download</button>
+  </div>
+
+  <section class="tab-panel" data-panel="store">
+    <div class="panel">
+      <div class="form-grid">
+        <div><label for="name">Store name</label><input type="text" id="name" data-f="name"></div>
+        <div><label for="tagline">Headline</label><input type="text" id="tagline" data-f="tagline" placeholder="Templates that save you hours"></div>
+        <div class="full"><label for="about">Short introduction</label><textarea id="about" class="prose" data-f="about" style="min-height:70px"></textarea></div>
+        <div><label for="template">Look</label><select id="template" data-f="template"></select></div>
+        <div><label for="currency">Currency</label><select id="currency" data-f="currency"><option>AUD</option><option>NZD</option><option>USD</option><option>GBP</option><option>EUR</option><option>CAD</option><option>INR</option><option>SGD</option></select></div>
+        <div><label for="contact">Contact email</label><input type="email" id="contact" data-f="contact"></div>
+        <div><label for="footer">Footer text (e.g. ABN)</label><input type="text" id="footer" data-f="footer"></div>
+      </div>
+      <h3>Colours</h3>
+      <div class="colors">
+        <label><input type="color" id="primary" data-f="primary"> Main colour (buttons)</label>
+        <label><input type="color" id="background" data-f="background"> Background</label>
+        <label><input type="color" id="text" data-f="text"> Text</label>
+      </div>
+      <h3>Logo</h3>
+      <div class="img-row"><img class="thumb" id="logoPrev" alt="Logo preview" hidden><button class="btn small" type="button" id="logoPick">Choose logo</button><button class="btn small" type="button" id="logoDel">Remove</button></div>
+      <h3>Email sign-up (optional)</h3>
+      <p class="small muted" style="margin-top:-4px">Paste the link to your sign-up form on a free email service (MailerLite, Buttondown, Kit, Substack…). The store shows a “Sign up” button.</p>
+      <div class="form-grid">
+        <div><label for="emailLink">Sign-up link</label><input type="url" id="emailLink" data-f="emailLink" placeholder="https://"></div>
+        <div><label for="emailText">Sign-up message</label><input type="text" id="emailText" data-f="emailText"></div>
+      </div>
+      <h3>Search and sharing</h3>
+      <div class="form-grid">
+        <div class="full"><label for="seoTitle">Page title for Google (≈ 60 characters) <span class="small muted" id="seoTitleCount"></span></label><input type="text" id="seoTitle" data-f="seoTitle"></div>
+        <div class="full"><label for="seoDescription">Description for Google (≈ 155 characters) <span class="small muted" id="seoDescCount"></span></label><input type="text" id="seoDescription" data-f="seoDescription"></div>
+        <div><label for="siteUrl">Store web address (once you know it)</label><input type="url" id="siteUrl" data-f="siteUrl" placeholder="https://you.github.io/store/"></div>
+      </div>
+      <div class="img-row"><img class="thumb" id="sharePrev" alt="Share image preview" hidden><button class="btn small" type="button" id="sharePick">Choose share image (1200×630)</button><button class="btn small" type="button" id="shareDel">Remove</button></div>
+    </div>
+  </section>
+
+  <section class="tab-panel" data-panel="products">
+    <div class="row" style="margin-top:14px"><button class="btn primary" type="button" id="addProd">+ Add product</button></div>
+    <p class="small muted">Create each product on Gumroad, Lemon Squeezy, Stripe Payment Links or PayPal first, then paste its checkout link here.</p>
+    <div id="prodList"></div>
+  </section>
+
+  <section class="tab-panel" data-panel="extras">
+    <div class="panel"><h2 style="margin-top:0">Questions buyers ask</h2><div id="faqList"></div><button class="btn small" type="button" id="addFaq">+ Add question</button></div>
+    <div class="panel"><h2 style="margin-top:0">Reviews</h2><p class="small muted" style="margin-top:-4px">Only use real reviews from real buyers, with their permission.</p><div id="tList"></div><button class="btn small" type="button" id="addT">+ Add review</button></div>
+  </section>
+
+  <section class="tab-panel" data-panel="preview">
+    <div id="checks" style="margin-top:14px"></div>
+    <div class="row" style="margin:10px 0"><div class="seg" id="device" role="group" aria-label="Preview width"><button type="button" data-w="375" aria-pressed="false">Phone</button><button type="button" data-w="768" aria-pressed="false">Tablet</button><button type="button" data-w="" aria-pressed="true">Full width</button></div>
+      <button class="btn small" type="button" id="openTab">Open in a new tab</button></div>
+    <div class="preview-wrap"><iframe id="preview" title="Store preview" sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"></iframe></div>
+    <div class="panel">
+      <h2 style="margin-top:0">Download</h2>
+      <div class="row"><button class="btn primary" type="button" id="dlZip">Download website (.zip)</button><button class="btn" type="button" id="dlHtml">Download single HTML file</button></div>
+      <p class="small muted">The zip has <code>index.html</code>, an <code>images</code> folder and a README. The single file has the images built in (bigger, but one file).</p>
+      <h3>Put it online free</h3>
+      <ol class="steps small">
+        <li><strong>Netlify Drop (quickest):</strong> unzip the download, open <a href="https://app.netlify.com/drop" target="_blank" rel="noopener">app.netlify.com/drop</a> and drag the folder onto the page. Make a free account to keep it.</li>
+        <li><strong>GitHub Pages:</strong> create a free public repository on <a href="https://github.com/new" target="_blank" rel="noopener">github.com</a>, click <em>uploading an existing file</em>, drag in <code>index.html</code> and the <code>images</code> folder, commit. Then <em>Settings → Pages</em> → Deploy from a branch → <code>main</code> / root → Save. Your shop appears at <code>https://your-name.github.io/repository-name/</code>.</li>
+        <li>Paste that address into <em>Store web address</em> on the Store tab and download again, so Google and link previews get the right URL.</li>
+      </ol>
+    </div>
+    <div class="row"><button class="btn" type="button" id="backup">Download backup (with images)</button><button class="btn" type="button" id="restore">Restore backup</button><button class="btn" type="button" id="clearAll">Delete everything</button></div>
+  </section>
+</main>
+<script src="../../assets/core.js"></script>
+<script src="./lib.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>
