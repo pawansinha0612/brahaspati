@@ -18,6 +18,7 @@
   --soft: #262830; --code: #23252c; --shadow: none;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; } /* layout classes like .row must not un-hide hidden elements */
 html { -webkit-text-size-adjust: 100%; }
 body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.55 var(--font); }
 a { color: var(--accent); }
